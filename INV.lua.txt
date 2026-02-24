@@ -5,6 +5,7 @@ local window = library:AddWindow("INV CLAN", {
     can_resize = false,
 })
 
+loacl Misc = window:AddTav ("Misc")
 local Farm = window:AddTab("Farm")
 local Tools = Farm:AddFolder("Tools")
 local Rocks = Farm:AddFolder("Rock Farming")
@@ -67,3 +68,26 @@ Tools:AddButton("Free AutoLift Gamepass", function()
         end
     end)
 end)
+
+Tabs.Misc:CreateButton{
+	Title = "Join Small Server",
+	Description = "Find lowest player count server",
+	Callback = function()
+		local PlaceID = game.PlaceId
+		local function GetSmallServer()
+			local AllServers = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+			local LowestPlayers = math.huge
+			local ServerID
+			for _, server in pairs(AllServers.data) do
+				if server.playing < LowestPlayers and server.playing > 0 then
+					LowestPlayers = server.playing
+					ServerID = server.id
+				end
+			end
+			if ServerID then
+				game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ServerID, game.Players.LocalPlayer)
+			end
+		end
+		GetSmallServer()
+	end
+}
