@@ -1,18 +1,46 @@
+-- Fixed & cleaned-up version
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library", true))()
+
 local window = library:AddWindow("INV CLAN", {
-    main_color = Color3.fromRGB(255, 0, 0), -- Changed to red
+    main_color = Color3.fromRGB(255, 0, 0),
     min_size = Vector2.new(470, 470),
     can_resize = false,
 })
 
-loacl Misc = window:AddTav ("Misc")
+-- Fixed: AddTab → AddTab (case-sensitive in most libs), typo "loacl" → local, "Tav" → Tab
+local Misc = window:AddTab("Misc")
 local Farm = window:AddTab("Farm")
-local Tools = Farm:AddFolder("Tools")
-local Rocks = Farm:AddFolder("Rock Farming")
 
-Tools:AddSwitch("Auto Pushups", function(state) _G.AutoPushups = state if state then startAutoRep("Pushups", "AutoPushups") end end)
-Tools:AddSwitch("Auto Weight", function(state) _G.AutoWeight = state if state then startAutoRep("Weight", "AutoWeight") end end)
-Tools:AddSwitch("Auto Handstands", function(state) _G.AutoHandstands = state if state then startAutoRep("Handstands", "AutoHandstands") end end)
+-- Folders inside Farm tab
+local Tools = Farm:AddFolder("Tools")
+local Rocks = Farm:AddFolder("Rock Farming")   -- (unused right now, but kept)
+
+-- Assuming these are defined somewhere else in your full script
+-- If not, you'll get errors — define them or remove the calls
+-- local muscleEvent   -- RemoteEvent?
+-- local LocalPlayer = game.Players.LocalPlayer
+-- function startAutoRep(exercise, globalVar) ... end
+
+Tools:AddSwitch("Auto Pushups", function(state)
+    _G.AutoPushups = state
+    if state then
+        startAutoRep("Pushups", "AutoPushups")
+    end
+end)
+
+Tools:AddSwitch("Auto Weight", function(state)
+    _G.AutoWeight = state
+    if state then
+        startAutoRep("Weight", "AutoWeight")
+    end
+end)
+
+Tools:AddSwitch("Auto Handstands", function(state)
+    _G.AutoHandstands = state
+    if state then
+        startAutoRep("Handstands", "AutoHandstands")
+    end
+end)
 
 Tools:AddSwitch("Fast Punch", function(state)
     _G.FastPunch = state
@@ -20,12 +48,16 @@ Tools:AddSwitch("Fast Punch", function(state)
         task.spawn(function()
             while _G.FastPunch do
                 pcall(function()
+                    local muscleEvent = --[[ define or get it here, example: ]] game.ReplicatedStorage:FindFirstChild("muscleEvent", true)
                     if muscleEvent then
                         muscleEvent:FireServer("punch", "rightHand")
                         muscleEvent:FireServer("punch", "leftHand")
                     end
-                    local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("Punch") then char.Punch:Activate() end
+
+                    local char = game.Players.LocalPlayer.Character
+                    if char and char:FindFirstChild("Punch") and char.Punch:IsA("Tool") then
+                        char.Punch:Activate()
+                    end
                 end)
                 task.wait(0.07)
             end
@@ -40,54 +72,84 @@ Tools:AddButton("Anti Lag (Boost FPS)", function()
     Lighting.ClockTime = 12
     Lighting.FogEnd = 9999
     Lighting.FogStart = 0
+
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or
            v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
             v.Enabled = false
         end
     end
+
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     print("Anti-Lag activated → check FPS (Shift+F5)")
 end)
 
 Tools:AddButton("Free AutoLift Gamepass", function()
     pcall(function()
-        local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
+        local gpFolder = game.ReplicatedStorage:FindFirstChild("gamepassIds")
         if gpFolder then
-            local owned = LocalPlayer:FindFirstChild("ownedGamepasses") or Instance.new("Folder", LocalPlayer)
-            owned.Name = "ownedGamepasses"
-            for _, gp in pairs(gpFolder:GetChildren()) do
-                local val = Instance.new("IntValue")
-                val.Name = gp.Name
-                val.Value = gp.Value
-                val.Parent = owned
+            local player = game.Players.LocalPlayer
+            local owned = player:FindFirstChild("ownedGamepasses")
+            if not owned then
+                owned = Instance.new("Folder")
+                owned.Name = "ownedGamepasses"
+                owned.Parent = player
             end
-            print("Gamepasses added (may require relog)")
+
+            for _, gp in pairs(gpFolder:GetChildren()) do
+                if gp:IsA("IntValue") or gp:IsA("NumberValue") then
+                    local val = Instance.new("IntValue")
+                    val.Name = gp.Name
+                    val.Value = gp.Value
+                    val.Parent = owned
+                end
+            end
+            print("Gamepasses added (may require relog / rejoin)")
         else
-            print("gamepassIds not found in ReplicatedStorage")
+            print("gamepassIds folder not found in ReplicatedStorage")
         end
     end)
 end)
 
-Tabs.Misc:CreateButton{
-	Title = "Join Small Server",
-	Description = "Find lowest player count server",
-	Callback = function()
-		local PlaceID = game.PlaceId
-		local function GetSmallServer()
-			local AllServers = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
-			local LowestPlayers = math.huge
-			local ServerID
-			for _, server in pairs(AllServers.data) do
-				if server.playing < LowestPlayers and server.playing > 0 then
-					LowestPlayers = server.playing
-					ServerID = server.id
-				end
-			end
-			if ServerID then
-				game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ServerID, game.Players.LocalPlayer)
-			end
-		end
-		GetSmallServer()
-	end
-}
+-- Fixed Misc tab button creation syntax
+-- Most Elerium-style libraries use :AddButton({Title = "...", Callback = function() ... end})
+Misc:AddButton({
+    Title = "Join Small Server",
+    Description = "Find lowest player count server",
+    Callback = function()
+        local PlaceID = game.PlaceId
+        local Players = game.Players
+        local HttpService = game:GetService("HttpService")
+        local TeleportService = game:GetService("TeleportService")
+
+        local success, servers = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(
+                "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+            ))
+        end)
+
+        if not success or not servers or not servers.data then
+            print("Failed to fetch servers")
+            return
+        end
+
+        local lowestPlayers = math.huge
+        local bestServerId = nil
+
+        for _, server in ipairs(servers.data) do
+            if server.playing < lowestPlayers and server.playing > 0 and server.id ~= game.JobId then
+                lowestPlayers = server.playing
+                bestServerId = server.id
+            end
+        end
+
+        if bestServerId then
+            print("Joining server with " .. lowestPlayers .. " players")
+            TeleportService:TeleportToPlaceInstance(PlaceID, bestServerId, Players.LocalPlayer)
+        else
+            print("No suitable small server found")
+        end
+    end
+})
+
+print("INV CLAN script loaded (fixed version)")
