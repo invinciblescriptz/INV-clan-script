@@ -1,42 +1,32 @@
--- Use Fluent UI library (most likely what you intended)
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+-- Elerium-based INV CLAN script (fixed & adapted)
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/obeseinsect/roblox/main/Ui%20Libraries/Elerium.lua", true))()
 
-local Window = Fluent:CreateWindow({
-    Title = "INV CLAN Hub  •  Muscle Game",
-    SubTitle = "by your name / clan",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,  -- The blur may be detectable in some games
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+local window = library:AddWindow("INV CLAN", {
+    main_color = Color3.fromRGB(255, 0, 0),
+    min_size = Vector2.new(470, 470),
+    can_resize = false,
 })
 
 -- Services
-local Players        = game:GetService("Players")
-local RunService     = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local Workspace      = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local Workspace = game:GetService("Workspace")
 local lp = Players.LocalPlayer
-local muscleEvent = lp:WaitForChild("muscleEvent", 9)   -- increased timeout
+local muscleEvent = lp:WaitForChild("muscleEvent", 9)
 
 -- State
 local States = {
-    AutoPushups    = false,
-    AutoWeight     = false,
+    AutoPushups = false,
+    AutoWeight = false,
     AutoHandstands = false,
-    FastPunch      = false,
-    FastStrength   = false,
-    InfiniteJump   = false,
-    -- AutoRebirth = false,   -- implement later if remote found
+    FastPunch = false,
+    FastStrength = false,
+    InfiniteJump = false,
 }
 
 local SelectedRockDur = 0
 local RockFarmActive = false
-
 local Connections = {}
 
 -- =============================================================
@@ -51,7 +41,7 @@ local function safeEquip(toolName)
         local tool = lp.Backpack:FindFirstChild(toolName) or char:FindFirstChild(toolName)
         if tool and tool.Parent ~= char then
             hum:EquipTool(tool)
-            task.wait(0.06)
+            task.wait(0.08)
         end
     end)
 end
@@ -59,89 +49,76 @@ end
 local function tpTo(pos)
     local char = lp.Character
     if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart", 8)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp then
-        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))  -- slight height to avoid stuck
+        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3.5, 0))
     end
 end
 
 -- =============================================================
--- Auto Rep (Pushups / Weight / Handstands)
+-- Auto Rep
 -- =============================================================
 local function startAutoRep(toolName, stateKey)
     task.spawn(function()
-        while States[stateKey] and task.wait(0.12) do   -- slower → safer
+        while States[stateKey] do
             local char = lp.Character
-            if not char then continue end
-            local hum = char:FindFirstChild("Humanoid")
-            if hum and hum.Health > 0 then
+            if char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
                 safeEquip(toolName)
                 if muscleEvent then
                     muscleEvent:FireServer("rep")
                 end
             end
+            task.wait(0.11 + math.random(-8, 8)/500)
         end
     end)
 end
 
 -- =============================================================
--- Fast Strength / Fast Punch   →   throttled versions (safer)
+-- Fast Strength
 -- =============================================================
 local function toggleFastStrength(enabled)
     States.FastStrength = enabled
-
-    if Connections.FastStr then
-        Connections.FastStr:Disconnect()
-        Connections.FastStr = nil
-    end
+    if Connections.FastStr then Connections.FastStr:Disconnect() Connections.FastStr = nil end
 
     if enabled and muscleEvent then
         Connections.FastStr = RunService.Heartbeat:Connect(function()
-            if not muscleEvent then return end
             muscleEvent:FireServer("rep")
-            -- Only one punch type → less detectable
             muscleEvent:FireServer("punch", "rightHand")
-            task.wait(0.07 + math.random() * 0.04)  -- ~12–15 fires/sec instead of 60+
+            task.wait(0.08)  -- throttle
         end)
     end
 end
 
+-- =============================================================
+-- Fast Punch
+-- =============================================================
 local function toggleFastPunch(enabled)
     States.FastPunch = enabled
-
-    if Connections.FastPunch then
-        Connections.FastPunch:Disconnect()
-        Connections.FastPunch = nil
-    end
+    if Connections.FastPunch then Connections.FastPunch:Disconnect() Connections.FastPunch = nil end
 
     if enabled then
         Connections.FastPunch = RunService.Heartbeat:Connect(function()
-            if not muscleEvent then return end
-            muscleEvent:FireServer("punch", "rightHand")
-            muscleEvent:FireServer("punch", "leftHand")
-
+            if muscleEvent then
+                muscleEvent:FireServer("punch", "rightHand")
+                muscleEvent:FireServer("punch", "leftHand")
+            end
             safeEquip("Punch")
             local char = lp.Character
             if char then
                 local tool = char:FindFirstChild("Punch")
                 if tool then tool:Activate() end
             end
-
-            task.wait(0.09)  -- throttle heavily
+            task.wait(0.095)
         end)
     end
 end
 
 -- =============================================================
--- Infinite Jump (clean)
+-- Infinite Jump
 -- =============================================================
 local function toggleInfiniteJump(enabled)
     States.InfiniteJump = enabled
-
-    if Connections.InfJump then
-        Connections.InfJump:Disconnect()
-        Connections.InfJump = nil
-    end
+    if Connections.InfJump then Connections.InfJump:Disconnect() Connections.InfJump = nil end
 
     if enabled then
         Connections.InfJump = UserInputService.JumpRequest:Connect(function()
@@ -154,18 +131,18 @@ local function toggleInfiniteJump(enabled)
 end
 
 -- =============================================================
--- Rock Farm (safer touch method)
+-- Rock Farm
 -- =============================================================
 local function getBestRockForDur(dur)
     local char = lp.Character
     if not char or not char.PrimaryPart then return end
 
     local hrpPos = char.PrimaryPart.Position
-    local best, bestDist = nil, 9e9
+    local best, bestDist = nil, math.huge
 
-    for _, obj in Workspace.machinesFolder:GetChildren() do
+    for _, obj in ipairs(Workspace.machinesFolder:GetChildren()) do
         local needed = obj:FindFirstChild("neededDurability")
-        if needed and needed.Value == dur then
+        if needed and needed:IsA("IntValue") and needed.Value == dur then
             local rock = obj:FindFirstChild("Rock")
             if rock and rock:IsA("BasePart") then
                 local dist = (rock.Position - hrpPos).Magnitude
@@ -179,195 +156,115 @@ local function getBestRockForDur(dur)
     return best
 end
 
--- Main rock farming loop (less aggressive)
 task.spawn(function()
     while true do
-        if not RockFarmActive or SelectedRockDur <= 0 then
-            task.wait(0.6) continue
-        end
+        if not RockFarmActive or SelectedRockDur <= 0 then task.wait(0.55) continue end
 
         local durVal = lp:FindFirstChild("Durability")
-        if not durVal or durVal.Value < SelectedRockDur then
-            task.wait(1.1) continue
-        end
+        if not durVal or durVal.Value < SelectedRockDur then task.wait(1) continue end
 
         local char = lp.Character
-        if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
-            task.wait(1.5) continue
-        end
+        if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then task.wait(1.4) continue end
 
         safeEquip("Punch")
 
         local targetRock = getBestRockForDur(SelectedRockDur)
-        if targetRock then
-            -- One clean touchinterest pair per cycle
-            if char:FindFirstChild("RightHand") then
-                firetouchinterest(targetRock, char.RightHand, 0)
-                task.wait(0.025)
-                firetouchinterest(targetRock, char.RightHand, 1)
-            end
+        if targetRock and char:FindFirstChild("RightHand") then
+            firetouchinterest(targetRock, char.RightHand, 0)
+            task.wait(0.03)
+            firetouchinterest(targetRock, char.RightHand, 1)
 
             if muscleEvent then
                 muscleEvent:FireServer("punch", "rightHand")
             end
         end
 
-        task.wait(0.25 + math.random() * 0.12)  -- much slower → lower ban risk
+        task.wait(0.22 + math.random() * 0.08)
     end
 end)
 
 local function toggleRockFarm(dur, state)
-    -- Turn off if clicking the already active one
-    if state and SelectedRockDur == dur then
-        RockFarmActive = false
-        SelectedRockDur = 0
-        Fluent:Notify({Title="Rock Farm", Content="Stopped", Duration=3})
-        return
-    end
-
     if state then
-        -- Turn off any previous rock farm
+        -- Turn off others
         RockFarmActive = false
-        task.wait(0.1)
+        task.wait(0.05)
         SelectedRockDur = dur
         RockFarmActive = true
-        Fluent:Notify({Title="Rock Farm", Content="Activated → Durability "..dur, Duration=4})
+        library:Notification("Rock Farm", "Activated → Durability " .. dur, 4)
     else
         if SelectedRockDur == dur then
             RockFarmActive = false
             SelectedRockDur = 0
-            Fluent:Notify({Title="Rock Farm", Content="Stopped", Duration=3})
+            library:Notification("Rock Farm", "Stopped", 3)
         end
     end
 end
 
 -- =============================================================
--- TABS
+-- UI Sections (Elerium style - no real tabs, so use sections)
 -- =============================================================
-local FarmTab     = Window:AddTab({ Title = "Farm" })
-local TeleportTab = Window:AddTab({ Title = "Teleport" })
-local MiscTab     = Window:AddTab({ Title = "Misc" })
-
-local ToolsFolder = FarmTab:AddSection("Auto Tools")
-local RockFolder  = FarmTab:AddSection("Rock Farm")
-
--- Auto tools
-ToolsFolder:AddToggle("AutoPushups", {
-    Title = "Auto Pushups",
-    Default = false,
-    Callback = function(v)
-        States.AutoPushups = v
-        if v then startAutoRep("Pushups", "AutoPushups") end
-    end
-})
-
-ToolsFolder:AddToggle("AutoWeight", {
-    Title = "Auto Weight",
-    Default = false,
-    Callback = function(v)
-        States.AutoWeight = v
-        if v then startAutoRep("Weight", "AutoWeight") end
-    end
-})
-
-ToolsFolder:AddToggle("AutoHandstands", {
-    Title = "Auto Handstands",
-    Default = false,
-    Callback = function(v)
-        States.AutoHandstands = v
-        if v then startAutoRep("Handstands", "AutoHandstands") end
-    end
-})
-
-ToolsFolder:AddToggle("FastPunch", {
-    Title = "Fast Punch (throttled)",
-    Default = false,
-    Callback = toggleFastPunch
-})
-
-ToolsFolder:AddToggle("FastStrength", {
-    Title = "Fast Strength (safer)",
-    Default = false,
-    Callback = toggleFastStrength
-})
-
-ToolsFolder:AddToggle("InfiniteJump", {
-    Title = "Infinite Jump",
-    Default = false,
-    Callback = toggleInfiniteJump
-})
-
--- Rock toggles (now mutually exclusive behavior)
-RockFolder:AddToggle("Rock0",    {Title = "Tiny Island (0)",     Callback = function(v) toggleRockFarm(0, v) end})
-RockFolder:AddToggle("Rock100",  {Title = "Starter Island (100)", Callback = function(v) toggleRockFarm(100, v) end})
-RockFolder:AddToggle("Rock5k",   {Title = "Legend Beach (5k)",    Callback = function(v) toggleRockFarm(5000, v) end})
-RockFolder:AddToggle("Rock150k", {Title = "Frost Gym (150k)",     Callback = function(v) toggleRockFarm(150000, v) end})
-RockFolder:AddToggle("Rock400k", {Title = "Mythical Gym (400k)",  Callback = function(v) toggleRockFarm(400000, v) end})
-RockFolder:AddToggle("Rock750k", {Title = "Eternal Gym (750k)",   Callback = function(v) toggleRockFarm(750000, v) end})
-RockFolder:AddToggle("Rock1M",   {Title = "Legend Gym (1M)",      Callback = function(v) toggleRockFarm(1000000, v) end})
-RockFolder:AddToggle("Rock5M",   {Title = "Muscle King (5M)",     Callback = function(v) toggleRockFarm(5000000, v) end})
-RockFolder:AddToggle("Rock10M",  {Title = "Ancient Jungle (10M)", Callback = function(v) toggleRockFarm(10000000, v) end})
-
-RockFolder:AddButton({
-    Title = "STOP All Rock Farms",
-    Callback = function()
-        RockFarmActive = false
-        SelectedRockDur = 0
-        Fluent:Notify({Title="Rock Farm", Content="All stopped", Duration=3})
-    end
-})
-
--- Teleports (add more positions if you know them)
-local TPFolder = TeleportTab:AddSection("Areas")
-TPFolder:AddButton({Title = "Spawn / Safe",     Callback = function() tpTo(Vector3.new(-6,    5, -196)) end})
-TPFolder:AddButton({Title = "Secret Area",      Callback = function() tpTo(Vector3.new(1947,  2, 6191)) end})
-TPFolder:AddButton({Title = "Tiny Area",        Callback = function() tpTo(Vector3.new(-39,   6, 1886)) end})
-TPFolder:AddButton({Title = "Frozen Area",      Callback = function() tpTo(Vector3.new(-2623, 6, -409)) end})
-TPFolder:AddButton({Title = "Mythical Area",    Callback = function() tpTo(Vector3.new(2251,  6, 1073)) end})
--- Add more buttons here when you find good coordinates
-
--- Misc
-local MiscFolder = MiscTab:AddSection("Utilities")
-MiscFolder:AddButton({
-    Title = "Anti Lag (FPS Boost)",
-    Callback = function()
-        local Lighting = game:GetService("Lighting")
-        Lighting.GlobalShadows = false
-        Lighting.Brightness = 1
-        Lighting.ClockTime = 12
-        Lighting.FogEnd = 9999
-
-        for _, v in Workspace:GetDescendants() do
-            if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or
-               v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") then
-                v.Enabled = false
-            end
-        end
-
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-        Fluent:Notify({Title="Anti-Lag", Content="Applied (press Shift+F5 to check FPS)", Duration=5})
-    end
-})
-
--- Optional: re-apply states after respawn
-lp.CharacterAdded:Connect(function()
-    task.wait(2)
-    -- You can re-toggle features here if you want them to persist
+local farmSection = window:AddSection("Farm - Tools")
+farmSection:AddToggle("Auto Pushups", false, function(v)
+    States.AutoPushups = v
+    if v then startAutoRep("Pushups", "AutoPushups") end
 end)
 
--- Optional save system (very useful)
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
+farmSection:AddToggle("Auto Weight", false, function(v)
+    States.AutoWeight = v
+    if v then startAutoRep("Weight", "AutoWeight") end
+end)
 
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ "MinimizeKey", "Keybind" })
+farmSection:AddToggle("Auto Handstands", false, function(v)
+    States.AutoHandstands = v
+    if v then startAutoRep("Handstands", "AutoHandstands") end
+end)
 
-InterfaceManager:SetFolder("INV_CLAN_Hub")
-SaveManager:SetFolder("INV_CLAN_Hub/saves")
+farmSection:AddToggle("Fast Punch", false, toggleFastPunch)
+farmSection:AddToggle("Fast Strength", false, toggleFastStrength)
+farmSection:AddToggle("Infinite Jump", false, toggleInfiniteJump)
 
-InterfaceManager:BuildInterfaceSection(MiscTab)
-SaveManager:BuildConfigSection(MiscTab)
+local rockSection = window:AddSection("Rock Farm")
+rockSection:AddToggle("Tiny Island (0)", false, function(v) toggleRockFarm(0, v) end)
+rockSection:AddToggle("Starter Island (100)", false, function(v) toggleRockFarm(100, v) end)
+rockSection:AddToggle("Legend Beach (5k)", false, function(v) toggleRockFarm(5000, v) end)
+rockSection:AddToggle("Frost Gym (150k)", false, function(v) toggleRockFarm(150000, v) end)
+rockSection:AddToggle("Mythical Gym (400k)", false, function(v) toggleRockFarm(400000, v) end)
+rockSection:AddToggle("Eternal Gym (750k)", false, function(v) toggleRockFarm(750000, v) end)
+rockSection:AddToggle("Legend Gym (1M)", false, function(v) toggleRockFarm(1000000, v) end)
+rockSection:AddToggle("Muscle King (5M)", false, function(v) toggleRockFarm(5000000, v) end)
+rockSection:AddToggle("Ancient Jungle (10M)", false, function(v) toggleRockFarm(10000000, v) end)
 
-task.spawn(function() SaveManager:LoadAutoloadConfig() end)
+rockSection:AddButton("STOP Rock Farm", function()
+    RockFarmActive = false
+    SelectedRockDur = 0
+    library:Notification("Rock Farm", "All stopped", 3)
+end)
 
-print("INV CLAN Fixed & Safer script loaded")
+local tpSection = window:AddSection("Teleport")
+tpSection:AddButton("Spawn / Safe", function() tpTo(Vector3.new(-6, 5, -196)) end)
+tpSection:AddButton("Secret Area", function() tpTo(Vector3.new(1947, 2, 6191)) end)
+tpSection:AddButton("Tiny Area", function() tpTo(Vector3.new(-39, 6, 1886)) end)
+tpSection:AddButton("Frozen Area", function() tpTo(Vector3.new(-2623, 6, -409)) end)
+tpSection:AddButton("Mythical Area", function() tpTo(Vector3.new(2251, 6, 1073)) end)
+-- Add more TP buttons as needed
+
+local miscSection = window:AddSection("Misc")
+miscSection:AddButton("Anti Lag (FPS Boost)", function()
+    local Lighting = game:GetService("Lighting")
+    Lighting.GlobalShadows = false
+    Lighting.Brightness = 1
+    Lighting.ClockTime = 12
+    Lighting.FogEnd = 9999
+
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or
+           v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") then
+            v.Enabled = false
+        end
+    end
+
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    library:Notification("Anti-Lag", "Applied! Check FPS with Shift+F5", 5)
+end)
+
+print("INV CLAN - Elerium UI version loaded")
