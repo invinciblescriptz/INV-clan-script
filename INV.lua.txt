@@ -49,7 +49,7 @@ Tools:AddButton("Anti Lag (Boost FPS)", function()
     print("Anti-Lag activated → check FPS (Shift+F5)")
 end)
 
-main:AddButton("Free AutoLift Gamepass", function()
+Tools:AddButton("Free AutoLift Gamepass", function()
     pcall(function()
         local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
         if gpFolder then
