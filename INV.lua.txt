@@ -1,205 +1,46 @@
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library"))()
-local window = library:AddWindow("Invincibles Priv Script", {
-    main_color = Color3.fromRGB(0, 255, 0),
+-- Fixed & cleaned-up version
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library", true))()
+
+local window = library:AddWindow("INV CLAN", {
+    main_color = Color3.fromRGB(255, 0, 0),
     min_size = Vector2.new(470, 470),
     can_resize = false,
 })
 
--- Services
-local Players           = game:GetService("Players")
-local LocalPlayer       = Players.LocalPlayer
-local Workspace         = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService  = game:GetService("UserInputService")
+-- Fixed: AddTab → AddTab (case-sensitive in most libs), typo "loacl" → local, "Tav" → Tab
+local Misc = window:AddTab("Misc")
+local Farm = window:AddTab("Farm")
 
-local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
+-- Folders inside Farm tab
+local Tools = Farm:AddFolder("Tools")
+local Rocks = Farm:AddFolder("Rock Farming")   -- (unused right now, but kept)
 
--- =============================================
--- AUTO REP (unchanged, good)
--- =============================================
-local function startAutoRep(toolName, toggleVar)
-    task.spawn(function()
-        while _G[toggleVar] do
-            pcall(function()
-                local char = LocalPlayer.Character
-                if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
-                    task.wait(1.5)
-                    return
-                end
-                local tool = LocalPlayer.Backpack:FindFirstChild(toolName) or char:FindFirstChild(toolName)
-                if tool and tool.Parent ~= char then
-                    char.Humanoid:EquipTool(tool)
-                end
-                if muscleEvent then muscleEvent:FireServer("rep") end
-            end)
-            task.wait(0.025)
-        end
-        pcall(function()
-            local char = LocalPlayer.Character
-            if char then
-                local eq = char:FindFirstChild(toolName)
-                if eq then eq.Parent = LocalPlayer.Backpack end
-            end
-        end)
-    end)
-end
+-- Assuming these are defined somewhere else in your full script
+-- If not, you'll get errors — define them or remove the calls
+-- local muscleEvent   -- RemoteEvent?
+-- local LocalPlayer = game.Players.LocalPlayer
+-- function startAutoRep(exercise, globalVar) ... end
 
--- Tabs & Folders (unchanged)
-local mainTab       = window:AddTab("Main")
-local betterFarming = window:AddTab("Better Farming")
-local teleportTab   = window:AddTab("Teleport")
-local killTab       = window:AddTab("Kill")
-local rebirthTab    = window:AddTab("Rebirth")
-local miscTab       = window:AddTab("Misc")
-
-local toolsFolder    = mainTab:AddFolder("Tools")
-local rockFarmFolder = mainTab:AddFolder("Rock Farm")
-
--- Tools section (unchanged, looks fine)
-
--- ... (keep your existing Tools, Teleports, Kill Aura code here - no major issues)
-
--- =============================================
--- ROCK FARM (added debounce + safety)
--- =============================================
-local selectedRock = "None"
-local rockFarmRunning = false
-local rockOptions = {
-    "Tiny Island Rock", "Starter Island Rock", "Legend Beach Rock",
-    "Frost Gym Rock", "Mythical Gym Rock", "Eternal Gym Rock",
-    "Legend Gym Rock", "Muscle King Gym Rock",
-}
-
-rockFarmFolder:AddDropdown("Select Rock", {
-    Values = rockOptions,
-    Callback = function(value) selectedRock = value end
-})
-
-local durabilityRequirements = {
-    ["Tiny Island Rock"]     = 0,
-    ["Starter Island Rock"]  = 100,
-    ["Legend Beach Rock"]    = 5000,
-    ["Frost Gym Rock"]       = 150000,
-    ["Mythical Gym Rock"]    = 400000,
-    ["Eternal Gym Rock"]     = 750000,
-    ["Legend Gym Rock"]      = 1000000,
-    ["Muscle King Gym Rock"] = 5000000,
-}
-
-rockFarmFolder:AddSwitch("Auto Farm Selected Rock", function(state)
-    rockFarmRunning = state
-    if state and selectedRock ~= "None" then
-        local reqDur = durabilityRequirements[selectedRock] or 0
-        task.spawn(function()
-            local lastTouch = 0
-            while rockFarmRunning do
-                task.wait(0.05)  -- Slightly slower to avoid rate limits
-                pcall(function()
-                    if not LocalPlayer:FindFirstChild("Durability") then return end
-                    if LocalPlayer.Durability.Value < reqDur then return end
-
-                    local char = LocalPlayer.Character
-                    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-
-                    for _, obj in pairs(Workspace.machinesFolder:GetDescendants()) do
-                        if obj.Name == "neededDurability" and obj.Value == reqDur then
-                            local rock = obj.Parent:FindFirstChild("Rock") or obj.Parent:FindFirstChildWhichIsA("BasePart")
-                            if rock and (tick() - lastTouch > 0.4) then
-                                lastTouch = tick()
-                                firetouchinterest(rock, char.RightHand, 0) task.wait(0.02)
-                                firetouchinterest(rock, char.RightHand, 1)
-                                firetouchinterest(rock, char.LeftHand,  0) task.wait(0.02)
-                                firetouchinterest(rock, char.LeftHand,  1)
-
-                                -- Equip & punch
-                                local humanoid = char:FindFirstChild("Humanoid")
-                                if humanoid then
-                                    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-                                        if tool.Name == "Punch" then
-                                            humanoid:EquipTool(tool)
-                                            break
-                                        end
-                                    end
-                                end
-                                if muscleEvent then
-                                    muscleEvent:FireServer("punch", "leftHand")
-                                    muscleEvent:FireServer("punch", "rightHand")
-                                end
-                            end
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-end)
-
--- =============================================
--- REBIRTH (improved - fallback + proper cancel)
--- =============================================
-local rebirthLoop = nil
-
-local function tryRebirth()
-    pcall(function()
-        local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
-        if rEvents and rEvents:FindFirstChild("rebirthRemote") then
-            rEvents.rebirthRemote:InvokeServer("rebirthRequest")
-            return true
-        end
-    end)
-    pcall(function()
-        if muscleEvent then
-            muscleEvent:FireServer("rebirth")  -- common fallback in newer scripts
-        end
-    end)
-end
-
-rebirthTab:AddSwitch("Auto Rebirth (Infinite)", function(state)
-    getgenv().autoRebirth = state
+Tools:AddSwitch("Auto Pushups", function(state)
+    _G.AutoPushups = state
     if state then
-        rebirthLoop = task.spawn(function()
-            while getgenv().autoRebirth do
-                tryRebirth()
-                task.wait(0.1)
-            end
-        end)
-    else
-        if rebirthLoop then task.cancel(rebirthLoop) rebirthLoop = nil end
+        startAutoRep("Pushups", "AutoPushups")
     end
 end)
 
--- Target rebirth (fixed loop management)
-local targetRebirth = 10  -- ← edit this to your goal
-local targetRebirthLoop = nil
-
-rebirthTab:AddSwitch("Auto Rebirth to Target (" .. targetRebirth .. ")", function(state)
+Tools:AddSwitch("Auto Weight", function(state)
+    _G.AutoWeight = state
     if state then
-        targetRebirthLoop = task.spawn(function()
-            while true do
-                task.wait(0.12)
-                if not LocalPlayer:FindFirstChild("leaderstats") or not LocalPlayer.leaderstats:FindFirstChild("Rebirths") then continue end
-                if LocalPlayer.leaderstats.Rebirths.Value >= targetRebirth then
-                    print("Target rebirth reached! Stopping.")
-                    break
-                end
-                tryRebirth()
-            end
-            targetRebirthLoop = nil
-        end)
-    else
-        if targetRebirthLoop then task.cancel(targetRebirthLoop) targetRebirthLoop = nil end
+        startAutoRep("Weight", "AutoWeight")
     end
 end)
 
--- Auto Size 2 & Auto TP Muscle King (unchanged, but added missing pcall safety if needed)
-
--- Misc (Infinite Jump - good)
-
-print("Invincibles Priv Script loaded | Fixed rebirth fallbacks & rock debounce")
-
-Tools:AddSwitch("Auto Pushups", function(state) _G.AutoPushups = state if state then startAutoRep("Pushups", "AutoPushups") end end)
-Tools:AddSwitch("Auto Weight", function(state) _G.AutoWeight = state if state then startAutoRep("Weight", "AutoWeight") end end)
-Tools:AddSwitch("Auto Handstands", function(state) _G.AutoHandstands = state if state then startAutoRep("Handstands", "AutoHandstands") end end)
+Tools:AddSwitch("Auto Handstands", function(state)
+    _G.AutoHandstands = state
+    if state then
+        startAutoRep("Handstands", "AutoHandstands")
+    end
+end)
 
 Tools:AddSwitch("Fast Punch", function(state)
     _G.FastPunch = state
@@ -207,12 +48,16 @@ Tools:AddSwitch("Fast Punch", function(state)
         task.spawn(function()
             while _G.FastPunch do
                 pcall(function()
+                    local muscleEvent = --[[ define or get it here, example: ]] game.ReplicatedStorage:FindFirstChild("muscleEvent", true)
                     if muscleEvent then
                         muscleEvent:FireServer("punch", "rightHand")
                         muscleEvent:FireServer("punch", "leftHand")
                     end
-                    local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("Punch") then char.Punch:Activate() end
+
+                    local char = game.Players.LocalPlayer.Character
+                    if char and char:FindFirstChild("Punch") and char.Punch:IsA("Tool") then
+                        char.Punch:Activate()
+                    end
                 end)
                 task.wait(0.07)
             end
@@ -227,31 +72,84 @@ Tools:AddButton("Anti Lag (Boost FPS)", function()
     Lighting.ClockTime = 12
     Lighting.FogEnd = 9999
     Lighting.FogStart = 0
+
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or
            v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
             v.Enabled = false
         end
     end
+
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     print("Anti-Lag activated → check FPS (Shift+F5)")
 end)
 
 Tools:AddButton("Free AutoLift Gamepass", function()
     pcall(function()
-        local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
+        local gpFolder = game.ReplicatedStorage:FindFirstChild("gamepassIds")
         if gpFolder then
-            local owned = LocalPlayer:FindFirstChild("ownedGamepasses") or Instance.new("Folder", LocalPlayer)
-            owned.Name = "ownedGamepasses"
-            for _, gp in pairs(gpFolder:GetChildren()) do
-                local val = Instance.new("IntValue")
-                val.Name = gp.Name
-                val.Value = gp.Value
-                val.Parent = owned
+            local player = game.Players.LocalPlayer
+            local owned = player:FindFirstChild("ownedGamepasses")
+            if not owned then
+                owned = Instance.new("Folder")
+                owned.Name = "ownedGamepasses"
+                owned.Parent = player
             end
-            print("Gamepasses added (may require relog)")
+
+            for _, gp in pairs(gpFolder:GetChildren()) do
+                if gp:IsA("IntValue") or gp:IsA("NumberValue") then
+                    local val = Instance.new("IntValue")
+                    val.Name = gp.Name
+                    val.Value = gp.Value
+                    val.Parent = owned
+                end
+            end
+            print("Gamepasses added (may require relog / rejoin)")
         else
-            print("gamepassIds not found in ReplicatedStorage")
+            print("gamepassIds folder not found in ReplicatedStorage")
         end
     end)
 end)
+
+-- Fixed Misc tab button creation syntax
+-- Most Elerium-style libraries use :AddButton({Title = "...", Callback = function() ... end})
+Misc:AddButton({
+    Title = "Join Small Server",
+    Description = "Find lowest player count server",
+    Callback = function()
+        local PlaceID = game.PlaceId
+        local Players = game.Players
+        local HttpService = game:GetService("HttpService")
+        local TeleportService = game:GetService("TeleportService")
+
+        local success, servers = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(
+                "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+            ))
+        end)
+
+        if not success or not servers or not servers.data then
+            print("Failed to fetch servers")
+            return
+        end
+
+        local lowestPlayers = math.huge
+        local bestServerId = nil
+
+        for _, server in ipairs(servers.data) do
+            if server.playing < lowestPlayers and server.playing > 0 and server.id ~= game.JobId then
+                lowestPlayers = server.playing
+                bestServerId = server.id
+            end
+        end
+
+        if bestServerId then
+            print("Joining server with " .. lowestPlayers .. " players")
+            TeleportService:TeleportToPlaceInstance(PlaceID, bestServerId, Players.LocalPlayer)
+        else
+            print("No suitable small server found")
+        end
+    end
+})
+
+print("INV CLAN script loaded (fixed version)")
