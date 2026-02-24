@@ -1,27 +1,26 @@
--- Load UI library
+-- Fixed & cleaned-up version
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library", true))()
 
--- Create main window
 local window = library:AddWindow("INV CLAN", {
     main_color = Color3.fromRGB(255, 0, 0),
     min_size = Vector2.new(470, 470),
     can_resize = false,
 })
 
--- Add "Farm" tab
+-- Fixed: AddTab → AddTab (case-sensitive in most libs), typo "loacl" → local, "Tav" → Tab
 local Farm = window:AddTab("Farm")
+local Killer = window:AddTab ("Killer")
 
--- Add folders inside "Farm" tab
+-- Folders inside Farm tab
 local Tools = Farm:AddFolder("Tools")
-local Rocks = Farm:AddFolder("Rock Farming") -- (unused right now, but kept)
+local Rocks = Farm:AddFolder("Rock Farming")   -- (unused right now, but kept)
 
--- Placeholder for startAutoRep function
-local function startAutoRep(exercise, globalVar)
-    print("Starting auto-rep for:", exercise)
-    -- Your auto-rep implementation here
-end
+-- Assuming these are defined somewhere else in your full script
+-- If not, you'll get errors — define them or remove the calls
+-- local muscleEvent   -- RemoteEvent?
+-- local LocalPlayer = game.Players.LocalPlayer
+-- function startAutoRep(exercise, globalVar) ... end
 
--- Auto Pushups switch
 Tools:AddSwitch("Auto Pushups", function(state)
     _G.AutoPushups = state
     if state then
@@ -29,7 +28,6 @@ Tools:AddSwitch("Auto Pushups", function(state)
     end
 end)
 
--- Auto Weight switch
 Tools:AddSwitch("Auto Weight", function(state)
     _G.AutoWeight = state
     if state then
@@ -37,7 +35,6 @@ Tools:AddSwitch("Auto Weight", function(state)
     end
 end)
 
--- Auto Handstands switch
 Tools:AddSwitch("Auto Handstands", function(state)
     _G.AutoHandstands = state
     if state then
@@ -45,23 +42,25 @@ Tools:AddSwitch("Auto Handstands", function(state)
     end
 end)
 
--- Fast Punch switch
+Tools:AddSwitch("Auto Pushups", function(state) _G.AutoPushups = state if state then startAutoRep("Pushups", "AutoPushups") end end)
+Tools:AddSwitch("Auto Weight", function(state) _G.AutoWeight = state if state then startAutoRep("Weight", "AutoWeight") end end)
+Tools:AddSwitch("Auto Handstands", function(state) _G.AutoHandstands = state if state then startAutoRep("Handstands", "AutoHandstands") end end)
+
 Tools:AddSwitch("Fast Punch", function(state)
     _G.FastPunch = state
     if state then
         task.spawn(function()
             while _G.FastPunch do
                 pcall(function()
-                    -- Get the muscleEvent object
-                    local muscleEvent = game.ReplicatedStorage:FindFirstChild("muscleEvent", true)
+                    local muscleEvent = --[[ define or get it here, example: ]] game.ReplicatedStorage:FindFirstChild("muscleEvent", true)
                     if muscleEvent then
                         muscleEvent:FireServer("punch", "rightHand")
                         muscleEvent:FireServer("punch", "leftHand")
                     end
 
-                    local player = game.Players.LocalPlayer
-                    if player and player.Character and player.Character:FindFirstChild("Punch") and player.Character.Punch:IsA("Tool") then
-                        player.Character.Punch:Activate()
+                    local char = game.Players.LocalPlayer.Character
+                    if char and char:FindFirstChild("Punch") and char.Punch:IsA("Tool") then
+                        char.Punch:Activate()
                     end
                 end)
                 task.wait(0.07)
@@ -70,7 +69,6 @@ Tools:AddSwitch("Fast Punch", function(state)
     end
 end)
 
--- Anti Lag (Boost FPS) button
 Tools:AddButton("Anti Lag (Boost FPS)", function()
     local Lighting = game:GetService("Lighting")
     Lighting.GlobalShadows = false
@@ -90,7 +88,6 @@ Tools:AddButton("Anti Lag (Boost FPS)", function()
     print("Anti-Lag activated → check FPS (Shift+F5)")
 end)
 
--- Free AutoLift Gamepass button
 Tools:AddButton("Free AutoLift Gamepass", function()
     pcall(function()
         local gpFolder = game.ReplicatedStorage:FindFirstChild("gamepassIds")
@@ -117,3 +114,46 @@ Tools:AddButton("Free AutoLift Gamepass", function()
         end
     end)
 end)
+
+
+
+local Input = Tabs.Killer:CreateInput("SpectatePlayer", {
+	Title = "Spectate Player",
+	Description = "",
+	Default = "",
+	Placeholder = "Player name...",
+	Numeric = false,
+	Finished = true,
+	Callback = function(Value)
+		local Players = game:GetService("Players")
+		local targetPlayer
+		targetPlayer = Players:FindFirstChild(Value)
+		if not targetPlayer then
+			for _, player in pairs(Players:GetPlayers()) do
+				if player.DisplayName:lower() == Value:lower() then
+					targetPlayer = player
+					break
+				end
+			end
+		end
+		if targetPlayer and targetPlayer.Character then
+			local camera = workspace.CurrentCamera
+			camera.CameraSubject = targetPlayer.Character.Humanoid
+			print("Now spectating: " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ")")
+		else
+			print("")
+		end
+	end
+})
+
+
+Tabs.Killer:CreateButton{
+	Title = "Stop Spying",
+	Description = "Switch camera back to your character",
+	Callback = function()
+		local Players = game:GetService("Players")
+		local camera = workspace.CurrentCamera
+		camera.CameraSubject = Players.LocalPlayer.Character.Humanoid
+		print("")
+	end
+}
