@@ -4,3 +4,66 @@ local window = library:AddWindow("INV CLAN", {
     min_size = Vector2.new(470, 470),
     can_resize = false,
 })
+
+local Farm = window:AddTab("Farm")
+local Tools = main:AddFolder("Tools")
+local Rocks = main:AddFolder("Rock Farming")
+
+Tools:AddSwitch("Auto Pushups", function(state) _G.AutoPushups = state if state then startAutoRep("Pushups", "AutoPushups") end end)
+Tools:AddSwitch("Auto Weight", function(state) _G.AutoWeight = state if state then startAutoRep("Weight", "AutoWeight") end end)
+Tools:AddSwitch("Auto Handstands", function(state) _G.AutoHandstands = state if state then startAutoRep("Handstands", "AutoHandstands") end end)
+
+Tools:AddSwitch("Fast Punch", function(state)
+    _G.FastPunch = state
+    if state then
+        task.spawn(function()
+            while _G.FastPunch do
+                pcall(function()
+                    if muscleEvent then
+                        muscleEvent:FireServer("punch", "rightHand")
+                        muscleEvent:FireServer("punch", "leftHand")
+                    end
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("Punch") then char.Punch:Activate() end
+                end)
+                task.wait(0.07)
+            end
+        end)
+    end
+end)
+
+Tools:AddButton("Anti Lag (Boost FPS)", function()
+    local Lighting = game:GetService("Lighting")
+    Lighting.GlobalShadows = false
+    Lighting.Brightness = 1
+    Lighting.ClockTime = 12
+    Lighting.FogEnd = 9999
+    Lighting.FogStart = 0
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or
+           v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
+            v.Enabled = false
+        end
+    end
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    print("Anti-Lag activated → check FPS (Shift+F5)")
+end)
+
+main:AddButton("Free AutoLift Gamepass", function()
+    pcall(function()
+        local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
+        if gpFolder then
+            local owned = LocalPlayer:FindFirstChild("ownedGamepasses") or Instance.new("Folder", LocalPlayer)
+            owned.Name = "ownedGamepasses"
+            for _, gp in pairs(gpFolder:GetChildren()) do
+                local val = Instance.new("IntValue")
+                val.Name = gp.Name
+                val.Value = gp.Value
+                val.Parent = owned
+            end
+            print("Gamepasses added (may require relog)")
+        else
+            print("gamepassIds not found in ReplicatedStorage")
+        end
+    end)
+end)
