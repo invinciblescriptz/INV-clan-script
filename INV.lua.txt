@@ -10,7 +10,7 @@ local window = library:AddWindow("INV CLAN", {
 -- Fixed: AddTab → AddTab (case-sensitive in most libs), typo "loacl" → local, "Tav" → Tab
 
 local Farm = window:AddTab("Farm")
-local toolsFolder    = FarmTab:AddFolder("Tools")
+local toolsFolder = FarmTab:AddFolder("Tools")
 
 toolsFolder:AddSwitch("Auto Pushups", function(s)
     states.AutoPushups = s
