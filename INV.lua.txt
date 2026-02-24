@@ -42,10 +42,6 @@ Tools:AddSwitch("Auto Handstands", function(state)
     end
 end)
 
-Tools:AddSwitch("Auto Pushups", function(state) _G.AutoPushups = state if state then startAutoRep("Pushups", "AutoPushups") end end)
-Tools:AddSwitch("Auto Weight", function(state) _G.AutoWeight = state if state then startAutoRep("Weight", "AutoWeight") end end)
-Tools:AddSwitch("Auto Handstands", function(state) _G.AutoHandstands = state if state then startAutoRep("Handstands", "AutoHandstands") end end)
-
 Tools:AddSwitch("Fast Punch", function(state)
     _G.FastPunch = state
     if state then
