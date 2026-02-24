@@ -6,8 +6,8 @@ local window = library:AddWindow("INV CLAN", {
 })
 
 local Farm = window:AddTab("Farm")
-local Tools = main:AddFolder("Tools")
-local Rocks = main:AddFolder("Rock Farming")
+local Tools = Farm:AddFolder("Tools")
+local Rocks = Farm:AddFolder("Rock Farming")
 
 Tools:AddSwitch("Auto Pushups", function(state) _G.AutoPushups = state if state then startAutoRep("Pushups", "AutoPushups") end end)
 Tools:AddSwitch("Auto Weight", function(state) _G.AutoWeight = state if state then startAutoRep("Weight", "AutoWeight") end end)
