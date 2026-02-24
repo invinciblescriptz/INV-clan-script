@@ -9,147 +9,84 @@ local window = library:AddWindow("INV CLAN", {
 
 -- Fixed: AddTab → AddTab (case-sensitive in most libs), typo "loacl" → local, "Tav" → Tab
 local Farm = window:AddTab("Farm")
-local Killer = window:AddTab ("Killer")
 
--- Folders inside Farm tab
-local Tools = Farm:AddFolder("Tools")
-local Rocks = Farm:AddFolder("Rock Farming")   -- (unused right now, but kept)
-
--- Assuming these are defined somewhere else in your full script
--- If not, you'll get errors — define them or remove the calls
--- local muscleEvent   -- RemoteEvent?
--- local LocalPlayer = game.Players.LocalPlayer
--- function startAutoRep(exercise, globalVar) ... end
-
-Tools:AddSwitch("Auto Pushups", function(state)
-    _G.AutoPushups = state
-    if state then
-        startAutoRep("Pushups", "AutoPushups")
-    end
+toolsFolder:AddSwitch("Auto Pushups", function(s)
+    states.AutoPushups = s
+    if s then startAutoRep("Pushups", "AutoPushups") end
 end)
 
-Tools:AddSwitch("Auto Weight", function(state)
-    _G.AutoWeight = state
-    if state then
-        startAutoRep("Weight", "AutoWeight")
-    end
+toolsFolder:AddSwitch("Auto Weight", function(s)
+    states.AutoWeight = s
+    if s then startAutoRep("Weight", "AutoWeight") end
 end)
 
-Tools:AddSwitch("Auto Handstands", function(state)
-    _G.AutoHandstands = state
-    if state then
-        startAutoRep("Handstands", "AutoHandstands")
-    end
+toolsFolder:AddSwitch("Auto Handstands", function(s)
+    states.AutoHandstands = s
+    if s then startAutoRep("Handstands", "AutoHandstands") end
 end)
 
-Tools:AddSwitch("Fast Punch", function(state)
-    _G.FastPunch = state
+toolsFolder:AddSwitch("Auto Punch (Fast)", function(state)
+    states.FastPunch = state
     if state then
         task.spawn(function()
-            while _G.FastPunch do
+            while states.FastPunch do
                 pcall(function()
-                    local muscleEvent = --[[ define or get it here, example: ]] game.ReplicatedStorage:FindFirstChild("muscleEvent", true)
                     if muscleEvent then
                         muscleEvent:FireServer("punch", "rightHand")
                         muscleEvent:FireServer("punch", "leftHand")
                     end
-
-                    local char = game.Players.LocalPlayer.Character
-                    if char and char:FindFirstChild("Punch") and char.Punch:IsA("Tool") then
-                        char.Punch:Activate()
+                    local char = LocalPlayer.Character
+                    if char then
+                        local punch = char:FindFirstChild("Punch") or LocalPlayer.Backpack:FindFirstChild("Punch")
+                        if punch and punch.Parent ~= char then
+                            char.Humanoid:EquipTool(punch)
+                        end
+                        if punch and punch.Parent == char then
+                            local atk = punch:FindFirstChild("attackTime")
+                            if atk and atk:IsA("NumberValue") then atk.Value = 0.01 end
+                            punch:Activate()
+                        end
                     end
                 end)
-                task.wait(0.07)
+                task.wait(0.035)
             end
         end)
     end
 end)
 
-Tools:AddButton("Anti Lag (Boost FPS)", function()
+toolsFolder:AddButton("Anti Lag (Boost FPS)", function()
     local Lighting = game:GetService("Lighting")
     Lighting.GlobalShadows = false
     Lighting.Brightness = 1
     Lighting.ClockTime = 12
     Lighting.FogEnd = 9999
     Lighting.FogStart = 0
-
-    for _, v in pairs(workspace:GetDescendants()) do
+    for _, v in pairs(Workspace:GetDescendants()) do
         if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or
            v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
             v.Enabled = false
         end
     end
-
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     print("Anti-Lag activated → check FPS (Shift+F5)")
 end)
 
-Tools:AddButton("Free AutoLift Gamepass", function()
+toolsFolder:AddButton("Free AutoLift Gamepass", function()
     pcall(function()
-        local gpFolder = game.ReplicatedStorage:FindFirstChild("gamepassIds")
+        local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
         if gpFolder then
-            local player = game.Players.LocalPlayer
-            local owned = player:FindFirstChild("ownedGamepasses")
-            if not owned then
-                owned = Instance.new("Folder")
-                owned.Name = "ownedGamepasses"
-                owned.Parent = player
-            end
-
+            local owned = LocalPlayer:FindFirstChild("ownedGamepasses") or Instance.new("Folder")
+            owned.Name = "ownedGamepasses"
+            owned.Parent = LocalPlayer
             for _, gp in pairs(gpFolder:GetChildren()) do
-                if gp:IsA("IntValue") or gp:IsA("NumberValue") then
-                    local val = Instance.new("IntValue")
-                    val.Name = gp.Name
-                    val.Value = gp.Value
-                    val.Parent = owned
-                end
+                local val = Instance.new("IntValue")
+                val.Name = gp.Name
+                val.Value = gp.Value
+                val.Parent = owned
             end
-            print("Gamepasses added (may require relog / rejoin)")
+            print("Gamepasses spoofed (may require relog)")
         else
-            print("gamepassIds folder not found in ReplicatedStorage")
+            print("gamepassIds not found")
         end
     end)
 end)
-
-
-
-local Input = Tabs.Killer:CreateInput("SpectatePlayer", {
-	Title = "Spectate Player",
-	Description = "",
-	Default = "",
-	Placeholder = "Player name...",
-	Numeric = false,
-	Finished = true,
-	Callback = function(Value)
-		local Players = game:GetService("Players")
-		local targetPlayer
-		targetPlayer = Players:FindFirstChild(Value)
-		if not targetPlayer then
-			for _, player in pairs(Players:GetPlayers()) do
-				if player.DisplayName:lower() == Value:lower() then
-					targetPlayer = player
-					break
-				end
-			end
-		end
-		if targetPlayer and targetPlayer.Character then
-			local camera = workspace.CurrentCamera
-			camera.CameraSubject = targetPlayer.Character.Humanoid
-			print("Now spectating: " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ")")
-		else
-			print("")
-		end
-	end
-})
-
-
-Tabs.Killer:CreateButton{
-	Title = "Stop Spying",
-	Description = "Switch camera back to your character",
-	Callback = function()
-		local Players = game:GetService("Players")
-		local camera = workspace.CurrentCamera
-		camera.CameraSubject = Players.LocalPlayer.Character.Humanoid
-		print("")
-	end
-}
