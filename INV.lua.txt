@@ -13,6 +13,7 @@ local LocalPlayer      = Players.LocalPlayer
 local Workspace        = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService       = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService") -- added
 
 local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
 
@@ -89,7 +90,6 @@ end
 -- =============================================================
 -- Tabs
 -- =============================================================
-local KillerTab    = window:AddTab("Killer")
 local FarmTab      = window:AddTab("Farm")
 local teleportTab  = window:AddTab("Teleport")
 
@@ -223,63 +223,6 @@ rockFarmFolder:AddButton("STOP Rock Farming", function()
 end)
 
 -- =============================================================
--- Killer Tab
--- =============================================================
-KillerTab:AddSwitch("Kill Aura (everyone)", function(state)
-    states.KillAura = state
-    if state then
-        task.spawn(function()
-            while states.KillAura and getgenv().NexusRunning do
-                for _, plr in ipairs(Players:GetPlayers()) do
-                    if plr ~= LocalPlayer then
-                        killPlayer(plr)
-                    end
-                end
-                task.wait(0.16)
-            end
-        end)
-    end
-end)
-
--- Target selector
-local playerDropdown = KillerTab:AddDropdown("Select Target", function(val)
-    if val then
-        selectedTarget = val:match("^([^|]+)") or nil
-    else
-        selectedTarget = nil
-    end
-end)
-
-KillerTab:AddSwitch("Auto Kill Selected", function(state)
-    states.AutoKillSelected = state
-    if state and selectedTarget then
-        task.spawn(function()
-            while states.AutoKillSelected and getgenv().NexusRunning do
-                local plr = Players:FindFirstChild(selectedTarget)
-                if plr then
-                    killPlayer(plr)
-                end
-                task.wait(0.16)
-            end
-        end)
-    end
-end)
-
--- Player list updater
-task.spawn(function()
-    while getgenv().NexusRunning do
-        local opts = {}
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer then
-                table.insert(opts, plr.Name .. " | " .. (plr.DisplayName or plr.Name))
-            end
-        end
-        playerDropdown:SetValues(opts)
-        task.wait(6)
-    end
-end)
-
--- =============================================================
 -- Teleports (unchanged)
 -- =============================================================
 local function tpTo(pos)
@@ -303,6 +246,27 @@ teleportTab:AddButton("To Jungle Area",          function() tpTo(Vector3.new(-86
 teleportTab:AddButton("To Lava Brawl",           function() tpTo(Vector3.new(4471,  119, -8836))  end)
 teleportTab:AddButton("To Desert Brawl",         function() tpTo(Vector3.new(960,   17,  -7398))  end)
 teleportTab:AddButton("To Beach Brawl",          function() tpTo(Vector3.new(-1849, 20,  -6335))  end)
+
+-- =====================================================================
+-- Add keybind for toggling the script
+-- =====================================================================
+local toggleKey = Enum.KeyCode.I -- the key to toggle, you can change this to your preferred key
+
+local function toggleNexus()
+    getgenv().NexusRunning = not getgenv().NexusRunning
+    if getgenv().NexusRunning then
+        print("Nexus script enabled")
+    else
+        print("Nexus script disabled")
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == toggleKey then
+        toggleNexus()
+    end
+end)
 
 -- Optional: cleanup on unload (if your UI library supports destroy callback)
 -- window:OnClose(function() getgenv().NexusRunning = false end)
