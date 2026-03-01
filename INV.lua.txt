@@ -1,18 +1,126 @@
 -- Make sure to load the UI library correctly
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library", true))()
+
 local window = library:AddWindow("INV CLAN", {
     main_color = Color3.fromRGB(255, 0, 0),
     min_size = Vector2.new(470, 470),
     can_resize = false,
 })
 
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "INVKeySystemGUI"
+screenGui.Parent = game.CoreGui -- or game.Players.LocalPlayer:WaitForChild("PlayerGui") in local scripts
+
+-- Create main frame for 3D effect
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+-- Add a subtle gradient or shadow for 3D appearance
+local shadow = Instance.new("Frame")
+shadow.Size = UDim2.new(1, 10, 1, 10)
+shadow.Position = UDim2.new(0, 5, 0, 5)
+shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.BackgroundTransparency = 0.5
+shadow.ZIndex = 0
+shadow.Parent = mainFrame
+
+-- Title Label
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Text = "INV key system"
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 24
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Position = UDim2.new(0.5, 0, 0, 20)
+titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+titleLabel.Parent = mainFrame
+
+-- Subtitle Label
+local subtitleLabel = Instance.new("TextLabel")
+subtitleLabel.Text = "by invincible"
+subtitleLabel.Font = Enum.Font.SourceSans
+subtitleLabel.TextSize = 14
+subtitleLabel.TextColor3 = Color3.new(1, 1, 1)
+subtitleLabel.BackgroundTransparency = 1
+subtitleLabel.Position = UDim2.new(0.5, 0, 0, 50)
+subtitleLabel.AnchorPoint = Vector2.new(0.5, 0)
+subtitleLabel.Parent = mainFrame
+
+-- TextBox
+local inputBox = Instance.new("TextBox")
+inputBox.Size = UDim2.new(0, 200, 0, 30)
+inputBox.Position = UDim2.new(0.5, 0, 0, 100)
+inputBox.AnchorPoint = Vector2.new(0.5, 0)
+inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+inputBox.TextColor3 = Color3.new(1, 1, 1)
+inputBox.BorderSizePixel = 0
+inputBox.PlaceholderText = "Enter Key"
+inputBox.Font = Enum.Font.SourceSans
+inputBox.TextSize = 14
+inputBox.Parent = mainFrame
+
+-- Button
+local submitButton = Instance.new("TextButton")
+submitButton.Size = UDim2.new(0, 200, 0, 40)
+submitButton.Position = UDim2.new(0.5, 0, 0, 150)
+submitButton.AnchorPoint = Vector2.new(0.5, 0)
+submitButton.Text = "Submit"
+submitButton.Font = Enum.Font.SourceSansBold
+submitButton.TextSize = 16
+submitButton.TextColor3 = Color3.new(1, 1, 1)
+submitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+submitButton.BorderSizePixel = 0
+submitButton.Parent = mainFrame
+
+-- Function to tween GUI elements
+local TweenService = game:GetService("TweenService")
+
+local function tweenGui(object, properties, duration)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(object, tweenInfo, properties)
+    tween:Play()
+end
+
+-- Apply tweens on startup
+tweenGui(titleLabel, {TextSize = 30, TextColor3 = Color3.new(1, 0.8, 0)}, 1)
+tweenGui(subtitleLabel, {TextSize = 18, TextColor3 = Color3.new(0.8, 1, 0.8)}, 1)
+tweenGui(inputBox, {BackgroundColor3 = Color3.fromRGB(70, 70, 70)}, 1)
+tweenGui(submitButton, {BackgroundColor3 = Color3.fromRGB(0, 150, 255)}, 1)
+
+-- Example of changeable font options
+local fonts = {
+    Enum.Font.SourceSans,
+    Enum.Font.Gotham,
+    Enum.Font.Fantasy,
+    Enum.Font.Arial,
+    Enum.Font.Cartoon,
+}
+
+-- Function to change fonts dynamically (you can call this to change fonts)
+local function changeFonts(fontEnum)
+    titleLabel.Font = fontEnum
+    subtitleLabel.Font = fontEnum
+    inputBox.Font = fontEnum
+    submitButton.Font = fontEnum
+end
+
+-- Example: Change all fonts to Gotham after 3 seconds
+delay(3, function()
+    changeFonts(Enum.Font.Gotham)
+end)
+
 -- Services
-local Players           = game:GetService("Players")
-local LocalPlayer       = Players.LocalPlayer
-local Workspace         = game:GetService("Workspace")
+local Players          = game:GetService("Players")
+local LocalPlayer      = Players.LocalPlayer
+local Workspace        = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService        = game:GetService("RunService")
-local UserInputService  = game:GetService("UserInputService")
+local RunService       = game:GetService("RunService")
 
 local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
 
@@ -21,41 +129,34 @@ getgenv().NexusRunning = true
 
 -- State
 local states = {
-    AutoPushups      = false,
-    AutoWeight       = false,
-    AutoHandstands   = false,
-    FastPunch        = false,
-    KillAura         = false,
-    AutoKillSelected = false,
+    AutoPushups       = false,
+    AutoWeight        = false,
+    AutoHandstands    = false,
+    FastPunch         = false,
+    KillAura          = false,
+    AutoKillSelected  = false,
 }
 
-local selectedTarget       = nil
-local currentRockDurability = 0   -- 0 = off
+local selectedTarget = nil
+local currentRockDurability = 0   -- only one rock type at a time
 
 -- =============================================================
--- Kill function (updated 2026 method — under-teleport + punch spam)
+-- Kill function
 -- =============================================================
 local function killPlayer(target)
     if not getgenv().NexusRunning then return end
-    if not target or not target.Character or target == LocalPlayer then return end
-
-    local myChar = LocalPlayer.Character
-    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
-
-    local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-    if not targetHRP then return end
-
-    task.spawn(function()
-        for i = 1, 12 do
-            pcall(function()
-                myChar.HumanoidRootPart.CFrame = targetHRP.CFrame * CFrame.new(0, -24 + math.random(-4,4), 0)
-                if muscleEvent then
-                    muscleEvent:FireServer("punch", "rightHand")
-                    muscleEvent:FireServer("punch", "leftHand")
-                end
-            end)
-            task.wait(0.06)
-        end
+    pcall(function()
+        if not target or not target.Character or target == LocalPlayer then return end
+        
+        local myChar = LocalPlayer.Character
+        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
+        
+        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+        if not targetHRP then return end
+        
+        -- Classic under-position method (most lifting sims still vulnerable to this in 2026)
+        local myHRP = myChar.HumanoidRootPart
+        myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, -26, 0)
     end)
 end
 
@@ -70,21 +171,20 @@ local function startAutoRep(toolName, stateKey)
                 if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
                     task.wait(1.2) return
                 end
-
+                
                 local tool = LocalPlayer.Backpack:FindFirstChild(toolName) or char:FindFirstChild(toolName)
                 if tool and tool.Parent ~= char then
                     char.Humanoid:EquipTool(tool)
-                    task.wait(0.08)
                 end
-
+                
                 if muscleEvent then
                     muscleEvent:FireServer("rep")
                 end
             end)
             task.wait(0.06)
         end
-
-        -- Cleanup
+        
+        -- Unequip when turned off
         pcall(function()
             local char = LocalPlayer.Character
             if char and char:FindFirstChild(toolName) then
@@ -95,11 +195,13 @@ local function startAutoRep(toolName, stateKey)
 end
 
 -- =============================================================
--- Tabs & Folders
+-- Tabs
 -- =============================================================
-local FarmTab       = window:AddTab("Farm")
-local teleportTab   = window:AddTab("Teleport")
-local toolsFolder   = FarmTab:AddFolder("Tools")
+local FarmTab      = window:AddTab("Farm")
+local teleportTab  = window:AddTab("Teleport")
+local AutoKillTab = window:AddTab("Auto Kill")
+
+local toolsFolder    = FarmTab:AddFolder("Tools")
 local rockFarmFolder = FarmTab:AddFolder("Rock Farm")
 
 -- =============================================================
@@ -130,118 +232,106 @@ toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
                         muscleEvent:FireServer("punch", "rightHand")
                         muscleEvent:FireServer("punch", "leftHand")
                     end
-
+                    
                     local char = LocalPlayer.Character
                     if char then
                         local punch = char:FindFirstChild("Punch") or LocalPlayer.Backpack:FindFirstChild("Punch")
                         if punch and punch.Parent ~= char then
                             char.Humanoid:EquipTool(punch)
-                            task.wait(0.05)
                         end
                         if punch and punch.Parent == char then
                             local atk = punch:FindFirstChild("attackTime")
-                            if atk and atk:IsA("NumberValue") then atk.Value = 0.008 end
+                            if atk and atk:IsA("NumberValue") then atk.Value = 0.01 end
                             punch:Activate()
                         end
                     end
                 end)
-                task.wait(0.075)
+                task.wait(0.08)
             end
         end)
     end
 end)
 
 -- =============================================================
--- Rock Farm (now properly exclusive via radio logic)
+-- Rock Farm (radio style - only one active)
 -- =============================================================
-local rockSwitches = {}
-
-local function createRockSwitch(name, dur)
-    local sw = rockFarmFolder:AddSwitch(name, function(s)
-        if s then
-            -- Turn off all others
-            for _, other in pairs(rockSwitches) do
-                if other ~= sw then
-                    other:Set(false)
-                end
-            end
-            currentRockDurability = dur
-        else
-            if currentRockDurability == dur then
-                currentRockDurability = 0
-            end
-        end
-    end)
-    table.insert(rockSwitches, sw)
+local function setRockFarm(durability)
+    if durability == 0 then
+        currentRockDurability = 0
+        return
+    end
+    currentRockDurability = durability
+    -- You can add notification here if you want
 end
 
-createRockSwitch("Farm Starter Island Rock (100)",      100)
-createRockSwitch("Farm Legend Beach Rock (5000)",      5000)
-createRockSwitch("Farm Frost Gym Rock (150k)",         150000)
-createRockSwitch("Farm Mythical Gym Rock (400k)",      400000)
-createRockSwitch("Farm Eternal Gym Rock (750k)",       750000)
-createRockSwitch("Farm Legend Gym Rock (1M)",          1000000)
-createRockSwitch("Farm Muscle King Gym Rock (5M)",     5000000)
-createRockSwitch("Farm Ancient Jungle Rock (10M)",     10000000)
-
-rockFarmFolder:AddButton("STOP Rock Farming", function()
-    currentRockDurability = 0
-    for _, sw in pairs(rockSwitches) do
-        sw:Set(false)
-    end
-end)
-
--- Rock farm loop
 task.spawn(function()
     while getgenv().NexusRunning do
         if currentRockDurability <= 0 then
-            task.wait(0.8) continue
+            task.wait(0.6)
+            continue
         end
-
+        
         pcall(function()
             local char = LocalPlayer.Character
             if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
-                task.wait(1.3) return
+                task.wait(1.2) return
             end
-
+            
             local dur = LocalPlayer:FindFirstChild("Durability")
             if not dur or dur.Value < currentRockDurability then
-                task.wait(0.6) return
+                task.wait(0.5) return
             end
-
-            local hum   = char.Humanoid
+            
+            local hum = char:FindFirstChild("Humanoid")
             local punch = char:FindFirstChild("Punch") or LocalPlayer.Backpack:FindFirstChild("Punch")
-
-            if punch and punch.Parent ~= char then
+            if hum and punch and punch.Parent ~= char then
                 hum:EquipTool(punch)
-                task.wait(0.09)
             end
-
-            for _, obj in pairs(Workspace:FindFirstChild("machinesFolder", true) and Workspace.machinesFolder:GetDescendants() or {}) do
+            
+            for _, obj in pairs(Workspace.machinesFolder:GetDescendants()) do
                 if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == currentRockDurability then
-                    local rock = obj.Parent:FindFirstChildWhichIsA("BasePart", true)
-                    if rock then
-                        -- Modern touch interest is often filtered — try both methods
+                    local rock = obj.Parent:FindFirstChild("Rock")
+                    if rock and rock:IsA("BasePart") then
                         if char:FindFirstChild("RightHand") then
                             firetouchinterest(rock, char.RightHand, 0)
-                            task.wait(0.03)
+                            task.wait(0.02)
                             firetouchinterest(rock, char.RightHand, 1)
                         end
+                        if char:FindFirstChild("LeftHand") then
+                            firetouchinterest(rock, char.LeftHand, 0)
+                            task.wait(0.02)
+                            firetouchinterest(rock, char.LeftHand, 1)
+                        end
                         if muscleEvent then
-                            muscleEvent:FireServer("punch", "rightHand")
                             muscleEvent:FireServer("punch", "leftHand")
+                            muscleEvent:FireServer("punch", "rightHand")
                         end
                     end
                 end
             end
         end)
-
-        task.wait(0.16 + math.random() * 0.07)
+        
+        task.wait(0.14 + math.random() * 0.06)
     end
 end)
 
+-- Rock switches (mutually exclusive)
+rockFarmFolder:AddSwitch("Farm Tiny Island Rock (0)",       function(s) if s then setRockFarm(0)       end end)
+rockFarmFolder:AddSwitch("Farm Starter Island Rock (100)",  function(s) if s then setRockFarm(100)     end end)
+rockFarmFolder:AddSwitch("Farm Legend Beach Rock (5000)",   function(s) if s then setRockFarm(5000)    end end)
+rockFarmFolder:AddSwitch("Farm Frost Gym Rock (150k)",      function(s) if s then setRockFarm(150000)  end end)
+rockFarmFolder:AddSwitch("Farm Mythical Gym Rock (400k)",   function(s) if s then setRockFarm(400000)  end end)
+rockFarmFolder:AddSwitch("Farm Eternal Gym Rock (750k)",    function(s) if s then setRockFarm(750000)  end end)
+rockFarmFolder:AddSwitch("Farm Legend Gym Rock (1M)",       function(s) if s then setRockFarm(1000000) end end)
+rockFarmFolder:AddSwitch("Farm Muscle King Gym Rock (5M)",  function(s) if s then setRockFarm(5000000) end end)
+rockFarmFolder:AddSwitch("Farm Ancient Jungle Rock (10M)",  function(s) if s then setRockFarm(10000000)end end)
+
+rockFarmFolder:AddButton("STOP Rock Farming", function()
+    setRockFarm(0)
+end)
+
 -- =============================================================
--- Teleports
+-- Teleports (unchanged)
 -- =============================================================
 local function tpTo(pos)
     pcall(function()
@@ -252,42 +342,18 @@ local function tpTo(pos)
     end)
 end
 
-teleportTab:AddButton("To Spawn / Safe Area",   function() tpTo(Vector3.new(-6,    5,   -196))   end)
-teleportTab:AddButton("To Secret Area",         function() tpTo(Vector3.new(1947,  2,   6191))   end)
-teleportTab:AddButton("To Tiny Area",           function() tpTo(Vector3.new(-39,   6,   1886))   end)
-teleportTab:AddButton("To Frozen Area",         function() tpTo(Vector3.new(-2623, 6,   -409))   end)
-teleportTab:AddButton("To Mythical Area",       function() tpTo(Vector3.new(2251,  6,   1073))   end)
-teleportTab:AddButton("To Inferno Area",        function() tpTo(Vector3.new(-6759, 6,   -1285))  end)
-teleportTab:AddButton("To Legend Area",         function() tpTo(Vector3.new(4603,  990, -3898))  end)
-teleportTab:AddButton("To Muscle King Area",    function() tpTo(Vector3.new(-8626, 16,  -5730))  end)
-teleportTab:AddButton("To Jungle Area",         function() tpTo(Vector3.new(-8642, 6,   2381))   end)
-teleportTab:AddButton("To Lava Brawl",          function() tpTo(Vector3.new(4471,  119, -8836))  end)
-teleportTab:AddButton("To Desert Brawl",        function() tpTo(Vector3.new(960,   17,  -7398))  end)
-teleportTab:AddButton("To Beach Brawl",         function() tpTo(Vector3.new(-1849, 20,  -6335))  end)
+teleportTab:AddButton("To Spawn / Safe Area",    function() tpTo(Vector3.new(-6,    5,   -196))   end)
+teleportTab:AddButton("To Secret Area",          function() tpTo(Vector3.new(1947,  2,   6191))   end)
+teleportTab:AddButton("To Tiny Area",            function() tpTo(Vector3.new(-39,   6,   1886))   end)
+teleportTab:AddButton("To Frozen Area",          function() tpTo(Vector3.new(-2623, 6,   -409))   end)
+teleportTab:AddButton("To Mythical Area",        function() tpTo(Vector3.new(2251,  6,   1073))   end)
+teleportTab:AddButton("To Inferno Area",         function() tpTo(Vector3.new(-6759, 6,  -1285))   end)
+teleportTab:AddButton("To Legend Area",          function() tpTo(Vector3.new(4603,  990, -3898))  end)
+teleportTab:AddButton("To Muscle King Area",     function() tpTo(Vector3.new(-8626, 16,  -5730))  end)
+teleportTab:AddButton("To Jungle Area",          function() tpTo(Vector3.new(-8642, 6,   2381))   end)
+teleportTab:AddButton("To Lava Brawl",           function() tpTo(Vector3.new(4471,  119, -8836))  end)
+teleportTab:AddButton("To Desert Brawl",         function() tpTo(Vector3.new(960,   17,  -7398))  end)
+teleportTab:AddButton("To Beach Brawl",          function() tpTo(Vector3.new(-1849, 20,  -6335))  end)
 
--- =====================================================================
--- Toggle keybind (using RightShift — change if needed)
--- =====================================================================
-local toggleKey = Enum.KeyCode.RightShift
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == toggleKey then
-        getgenv().NexusRunning = not getgenv().NexusRunning
-        print("Nexus script " .. (getgenv().NexusRunning and "enabled" or "disabled"))
-        
-        -- Quick cleanup when disabled
-        if not getgenv().NexusRunning then
-            currentRockDurability = 0
-            for _, sw in pairs(rockSwitches) do
-                sw:Set(false)
-            end
-            states.AutoPushups = false
-            states.AutoWeight = false
-            states.AutoHandstands = false
-            states.FastPunch = false
-        end
-    end
-end)
-
-print("INV CLAN script loaded — press RightShift to toggle")
+-- Optional: cleanup on unload (if your UI library supports destroy callback)
+-- window:OnClose(function() getgenv().NexusRunning = false end)
