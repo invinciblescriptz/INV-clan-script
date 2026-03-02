@@ -9,23 +9,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
--- Random UI color
-local r = math.random(60, 220)
-local g = math.random(60, 220)
-local b = math.random(60, 220)
-local randomColor = Color3.fromRGB(r, g, b)
-
 -- UI Library
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library", true))()
 local window = library:AddWindow("|| INV public ||", {
-    main_color = randomColor,
+    main_color = Color3.fromRGB(math.random(60, 220), math.random(60, 220), math.random(60, 220)),
     min_size = Vector2.new(480, 480),
     can_resize = false,
     background_transparency = 0.95,
 })
 
+-- Global state
 getgenv().NexusRunning = true
-
 local states = {
     AutoPushups = false,
     AutoWeight = false,
@@ -34,7 +28,7 @@ local states = {
     InfiniteJump = false,
     AutoRebirth = false,
     AutoRebirthTarget = false,
-    AntiAfk = false,
+    AutoWhitelistFriends = false,
     RockFarm = false,
 }
 
@@ -42,39 +36,29 @@ local targetRebirths = 1
 getgenv().rockFarmActive = false
 getgenv().selectedRockDurability = 0
 
--- Helpers
-local muscleEvent = ReplicatedStorage:FindFirstChild("muscleEvent", true) -- verify in 2026
-
+-- Helper functions
 local function safeTp(pos)
-    pcall(function()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
-        end
-    end)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+    end
 end
 
 local function equipAndActivate(toolName)
-    pcall(function()
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return end
-
-        local tool = LocalPlayer.Backpack:FindFirstChild(toolName) or char:FindFirstChild(toolName)
-        if tool then
-            if tool.Parent ~= char then
-                char.Humanoid:EquipTool(tool)
-                task.wait(0.18)
-            end
-            -- Make sure tool has Activate method
-            if tool:IsA("Tool") then
-                -- Safely activate
-                pcall(function() tool:Activate() end)
-            end
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return end
+    local tool = LocalPlayer.Backpack:FindFirstChild(toolName) or char:FindFirstChild(toolName)
+    if tool then
+        if tool.Parent ~= char then
+            char.Humanoid:EquipTool(tool)
+            task.wait(0.2)
         end
-    end)
+        if tool:IsA("Tool") then
+            pcall(function() tool:Activate() end)
+        end
+    end
 end
 
--- Auto Tool Farm
 local function startAutoToolFarm(toolName, stateKey)
     task.spawn(function()
         while states[stateKey] and getgenv().NexusRunning do
@@ -84,73 +68,68 @@ local function startAutoToolFarm(toolName, stateKey)
     end)
 end
 
--- Infinite Jump
 local jumpConn
-local function toggleInfiniteJump(state)
-    if state then
+local function toggleInfiniteJump(enabled)
+    if enabled then
         if jumpConn then return end
         jumpConn = UserInputService.JumpRequest:Connect(function()
-            pcall(function()
-                local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-            end)
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
         end)
     else
         if jumpConn then jumpConn:Disconnect() jumpConn = nil end
     end
 end
 
--- Anti-AFK
-local antiAfkConn
-local function toggleAntiAfk(state)
-    if state then
-        if antiAfkConn then return end
-        antiAfkConn = LocalPlayer.Idled:Connect(function()
+local antiAFKConn
+local function toggleAntiAfk(enabled)
+    if enabled then
+        if antiAFKConn then return end
+        antiAFKConn = LocalPlayer.Idled:Connect(function()
             VirtualUser:CaptureController()
             VirtualUser:ClickButton2(Vector2.new())
         end)
     else
-        if antiAfkConn then antiAfkConn:Disconnect() antiAfkConn = nil end
+        if antiAFKConn then antiAFKConn:Disconnect() antiAFKConn = nil end
     end
 end
 
--- Rock farm loop (very slow)
+-- Rock farming loop
 task.spawn(function()
     while getgenv().NexusRunning do
         if not getgenv().rockFarmActive or getgenv().selectedRockDurability <= 0 then
             task.wait(1.2)
-            continue -- Lua doesn't support continue, so replace with an if block
-        end
-
-        pcall(function()
+        else
             local char = LocalPlayer.Character
-            if not char or char.Humanoid.Health <= 0 then task.wait(2.5) return end
-
-            local dur = LocalPlayer:FindFirstChild("Durability")
-            if not dur or dur.Value < getgenv().selectedRockDurability then
-                task.wait(1.8)
-                return
-            end
-
-            equipAndActivate("Punch")
-
-            for _, obj in pairs(workspace.machinesFolder:GetDescendants()) do
-                if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == getgenv().selectedRockDurability then
-                    local rock = obj.Parent:FindFirstChild("Rock")
-                    if rock and rock:IsA("BasePart") then
-                        local hand = char:FindFirstChild("RightHand") or char:FindFirstChild("LeftHand")
-                        if hand then
-                            firetouchinterest(rock, hand, 0)
-                            task.wait(0.09 + math.random(0, 30) / 100)
-                            firetouchinterest(rock, hand, 1)
+            if not (char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0) then
+                task.wait(2.5)
+            else
+                local dur = LocalPlayer:FindFirstChild("Durability")
+                if not (dur and dur.Value >= getgenv().selectedRockDurability) then
+                    task.wait(1.8)
+                else
+                    -- Farm logic
+                    equipAndActivate("Punch")
+                    for _, obj in pairs(workspace.machinesFolder:GetDescendants()) do
+                        if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == getgenv().selectedRockDurability then
+                            local rock = obj.Parent:FindFirstChild("Rock")
+                            if rock and rock:IsA("BasePart") then
+                                local hand = char:FindFirstChild("RightHand") or char:FindFirstChild("LeftHand")
+                                if hand then
+                                    firetouchinterest(rock, hand, 0)
+                                    task.wait(0.09 + math.random(0, 30) / 100)
+                                    firetouchinterest(rock, hand, 1)
+                                end
+                                task.wait(0.7 + math.random(20, 90) / 100)
+                                break
+                            end
                         end
-                        task.wait(0.7 + math.random(20, 90) / 100)
-                        break
                     end
                 end
             end
-        end)
-
+        end
         task.wait(1.1 + math.random(30, 120) / 100)
     end
 end)
@@ -167,7 +146,7 @@ local function setRockFarm(dur, enable)
     end
 end
 
--- Rebirth function
+-- Rebirth Remote
 local function tryRebirth()
     pcall(function()
         local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
@@ -178,16 +157,16 @@ local function tryRebirth()
 end
 
 local rebirthLoop
-local function toggleAutoRebirth(state)
-    states.AutoRebirth = state
-    if state then
+local function toggleAutoRebirth(enabled)
+    states.AutoRebirth = enabled
+    if enabled then
         rebirthLoop = task.spawn(function()
             while states.AutoRebirth and getgenv().NexusRunning do
                 local rebirths = LocalPlayer.leaderstats and LocalPlayer.leaderstats:FindFirstChild("Rebirths")
                 if rebirths then
                     tryRebirth()
                 end
-                task.wait(2.8 + math.random(100, 400) / 100)
+                task.wait(2.8 + math.random(0.8, 4))
             end
         end)
     else
@@ -198,30 +177,18 @@ local function toggleAutoRebirth(state)
     end
 end
 
--- ──────────────────────────────────────────────────────────────
 -- UI Tabs
--- ──────────────────────────────────────────────────────────────
-
-local mainTab     = window:AddTab("Main")
-local rebirthTab  = window:AddTab("Rebirth")
+local mainTab = window:AddTab("Main")
+local rebirthTab = window:AddTab("Rebirth")
 local teleportTab = window:AddTab("Teleport")
-local creditsTab  = window:AddTab("Credits")
-local killTab     = window:AddTab("Kill")   -- fixed typo
+local creditsTab = window:AddTab("Credits")
+local killTab = window:AddTab("Kill") -- typo fixed
 
 local toolsFolder = mainTab:AddFolder("Auto Tools")
-local rockFolder  = mainTab:AddFolder("Rock Farm")
+local rockFolder = mainTab:AddFolder("Rock Farm")
 
--- Global toggles / vars used in Kill tab
-_G.autoGoodKarma      = false
-_G.autoBadKarma       = false   -- not used, can remove if desired
-_G.fastHitActive      = false
+-- Whitelist and Player list
 _G.whitelistedPlayers = _G.whitelistedPlayers or {}
-_G.viewPlayer         = false
-_G.ViewTarget         = ""
-_G.autoWhitelistFriends = false
-_G.selectedPet        = ""
-
--- Player list update
 local function UpdatePlayerLists()
     if WhitelistDropdown then
         WhitelistDropdown:Clear()
@@ -240,13 +207,12 @@ Players.PlayerRemoving:Connect(UpdatePlayerLists)
 task.wait(0.5)
 UpdatePlayerLists()
 
--- Kill Tab content
-local labelPet = killTab:AddLabel("Select damage or durability pet")
-local PetSelector = killTab:AddDropdown("Select Pet", function(Value)
-    _G.selectedPet = Value
+-- Kill tab features
+local petDropdown = killTab:AddDropdown("Select Pet", function(value)
+    _G.selectedPet = value
 end)
-PetSelector:Add("Wild Wizard")
-PetSelector:Add("Mighty Monster")
+petDropdown:Add("Wild Wizard")
+petDropdown:Add("Mighty Monster")
 
 killTab:AddSwitch("Auto Good Karma", function(bool)
     _G.autoGoodKarma = bool
@@ -267,6 +233,15 @@ killTab:AddSwitch("Auto Good Karma", function(bool)
     end)
 end):Set(false)
 
+local whitelistDropdown = killTab:AddDropdown("Add to Whitelist", function(name)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.DisplayName == name and not table.find(_G.whitelistedPlayers, plr.Name) then
+            table.insert(_G.whitelistedPlayers, plr.Name)
+            break
+        end
+    end
+end)
+
 killTab:AddSwitch("Auto Whitelist Friends", function(bool)
     _G.autoWhitelistFriends = bool
     task.spawn(function()
@@ -285,15 +260,6 @@ killTab:AddSwitch("Auto Whitelist Friends", function(bool)
     end)
 end):Set(false)
 
-local WhitelistDropdown = killTab:AddDropdown("Add to Whitelist", function(displayName)
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr.DisplayName == displayName and not table.find(_G.whitelistedPlayers, plr.Name) then
-            table.insert(_G.whitelistedPlayers, plr.Name)
-            break
-        end
-    end
-end)
-
 killTab:AddSwitch("Auto Punch", function(bool)
     _G.fastHitActive = bool
     if bool then
@@ -306,7 +272,7 @@ killTab:AddSwitch("Auto Punch", function(bool)
     end
 end):Set(false)
 
--- Buttons for changing size
+-- Buttons for size change
 killTab:AddButton("Size 30", function()
     pcall(function()
         local remote = ReplicatedStorage:WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote")
@@ -321,40 +287,28 @@ killTab:AddButton("Size 2", function()
     end)
 end)
 
--- Change Time (Lighting)
-local TimeDropdown = killTab:AddDropdown("Change Time", function(value)
+-- Change Time
+local timeDropdown = killTab:AddDropdown("Change Time", function(value)
     Lighting.Brightness = 2
     Lighting.FogEnd = 100000
     Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-
     local times = {
-        Midnight       = 0,
-        Morning        = 8,
-        Noon           = 12,
-        Afternoon      = 14,
-        Sunset         = 18,
-        Night          = 20,
-        Dawn           = 6,
+        Midnight = 0,
+        Morning = 8,
+        Noon = 12,
+        Afternoon = 14,
+        Sunset = 18,
+        Night = 20,
+        Dawn = 6,
         ["Early Morning"] = 5,
     }
     if times[value] then
         Lighting.ClockTime = times[value]
     end
 end)
-
 for _, t in ipairs({"Morning", "Noon", "Afternoon", "Sunset", "Night", "Midnight", "Dawn", "Early Morning"}) do
-    TimeDropdown:Add(t)
+    timeDropdown:Add(t)
 end
-
--- Blacklist (if needed)
---[[
-local BlacklistFileName = "GenesisBlacklist_" .. LocalPlayer.Name .. ".txt"
-if not isfile(BlacklistFileName) then writefile(BlacklistFileName, "") end
-
-killTab:AddTextBox("Add to Blacklist", function(text)
-    appendfile(BlacklistFileName, "," .. text)
-end, {placeholder = "Ex: User1, User2"})
---]]
 
 -- Credits
 creditsTab:AddLabel("Script Made by: invincible")
@@ -363,7 +317,7 @@ creditsTab:AddButton("Copy Discord Link", function()
 end)
 creditsTab:AddParagraph("Note", "Use alt • Slow farming = safer • Remote spam is mostly patched in 2026")
 
--- Tool toggles
+-- Auto Tools toggles
 toolsFolder:AddSwitch("Auto Pushups", function(s)
     states.AutoPushups = s
     if s then startAutoToolFarm("Pushups", "AutoPushups") end
@@ -381,7 +335,7 @@ toolsFolder:AddSwitch("Auto Punch (Safe)", function(s)
     states.FastPunch = s
     if s then
         task.spawn(function()
-            while states.FastPunch and getgenv().NexusRunning do
+            while _G.fastHitActive and getgenv().NexusRunning do
                 equipAndActivate("Punch")
                 task.wait(0.48 + math.random(20, 90) / 100)
             end
@@ -397,14 +351,12 @@ toolsFolder:AddButton("Anti-Lag (FPS Boost)", function()
     Lighting.Brightness = 1.2
     Lighting.ClockTime = 14
     Lighting.FogEnd = 99999
-
     for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or
-           v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
+        if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles")
+        or v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
             v.Enabled = false
         end
     end
-
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end)
 
@@ -435,7 +387,7 @@ rockFolder:AddButton("STOP Rock Farming", function()
     getgenv().selectedRockDurability = 0
 end)
 
--- Rebirth Controls
+-- Rebirth controls
 local rebirthFolder = rebirthTab:AddFolder("Rebirth Controls")
 rebirthFolder:AddSwitch("Auto Rebirth (Slow)", toggleAutoRebirth)
 
@@ -461,7 +413,7 @@ rebirthFolder:AddSwitch("Auto Rebirth → Target", function(s)
     end
 end)
 
--- Cleanup on close
+-- Cleanup
 game:BindToClose(function()
     getgenv().NexusRunning = false
 end)
