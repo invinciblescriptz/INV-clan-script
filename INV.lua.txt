@@ -7,7 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
+local workspace = game:GetService("Workspace")
 local PlayerService = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
@@ -79,7 +79,7 @@ local function startAutoToolFarm(toolName, stateKey)
     task.spawn(function()
         while states[stateKey] and getgenv().NexusRunning do
             equipAndActivate(toolName)
-            task.wait(0.55 + math.random(0, 80) / 100) -- 0.55–1.35s
+            task.wait(0.55 + math.random(0, 80) / 100) -- 0.55-1.35s
         end
     end)
 end
@@ -200,32 +200,29 @@ local mainTab = window:AddTab("Main")
 local rebirthTab = window:AddTab("Rebirth")
 local teleportTab = window:AddTab("Teleport")
 local creditsTab = window:AddTab("Credits")
-local KillTab = window:AddTab("Kill") -- Fixed syntax error: missing closing quote
+local KillTab = window:AddTab("Kill") -- Fixed typo: missing closing quote
 
--- Auto Tools Folder
 local toolsFolder = mainTab:AddFolder("Auto Tools")
 local rockFolder = mainTab:AddFolder("Rock Farm")
 
--- Additional variables
-_G.autoGoodKarma = false
-_G.autoBadKarma = false
-_G.fastHitActive = false
-_G.whitelistedPlayers = _G.whitelistedPlayers or {}
-_G.viewPlayer = false
-_G.ViewTarget = ""
-_G.autoWhitelistFriends = false
-_G.selectedPet = ""
-
--- Player list update
 local function UpdatePlayerLists()
-    -- Assuming WhitelistDropdown and ViewDropdown are already created
-    if WhitelistDropdown then WhitelistDropdown:Clear() end
-    if ViewDropdown then ViewDropdown:Clear() end
+    -- Assuming WhitelistDropdown and ViewDropdown are dropdown UI elements
+    -- They should be defined somewhere; adding placeholder
+    if _G.WhitelistDropdown then
+        _G.WhitelistDropdown:Clear()
+    end
+    if _G.ViewDropdown then
+        _G.ViewDropdown:Clear()
+    end
 
     for _, Player in ipairs(PlayerService:GetPlayers()) do
         if Player ~= LocalPlayer then
-            if WhitelistDropdown then WhitelistDropdown:Add(Player.DisplayName) end
-            if ViewDropdown then ViewDropdown:Add(Player.DisplayName) end
+            if _G.WhitelistDropdown then
+                _G.WhitelistDropdown:Add(Player.DisplayName)
+            end
+            if _G.ViewDropdown then
+                _G.ViewDropdown:Add(Player.DisplayName)
+            end
         end
     end
 end
@@ -235,42 +232,14 @@ PlayerService.PlayerRemoving:Connect(UpdatePlayerLists)
 task.wait(1)
 UpdatePlayerLists()
 
--- Kill tab elements
+-- Kill tab
+KillTab:AddLabel("Select damage or durability pet")
+
 local PetSelector = KillTab:AddDropdown("Select Pet", function(Value)
     _G.selectedPet = Value
 end)
 PetSelector:Add("Wild Wizard")
 PetSelector:Add("Mighty Monster")
-
-local AutoWhitelistSwitch = KillTab:AddSwitch("Auto Whitelist Friends", function(BooleanValue)
-    _G.autoWhitelistFriends = BooleanValue
-    task.spawn(function()
-        while _G.autoWhitelistFriends do
-            pcall(function()
-                for _, Player in ipairs(PlayerService:GetPlayers()) do
-                    if Player ~= LocalPlayer and LocalPlayer:IsFriendsWith(Player.UserId) then
-                        if not table.find(_G.whitelistedPlayers, Player.Name) then
-                            table.insert(_G.whitelistedPlayers, Player.Name)
-                        end
-                    end
-                end
-            end)
-            task.wait(5)
-        end
-    end)
-end)
-AutoWhitelistSwitch:Set(false)
-
-local WhitelistDropdown = KillTab:AddDropdown("Add to Whitelist", function(DisplayName)
-    for _, Player in ipairs(PlayerService:GetPlayers()) do
-        if Player.DisplayName == DisplayName then
-            if not table.find(_G.whitelistedPlayers, Player.Name) then
-                table.insert(_G.whitelistedPlayers, Player.Name)
-            end
-            break
-        end
-    end
-end)
 
 local AutoPunchSwitch = KillTab:AddSwitch("Auto Punch", function(BooleanValue)
     _G.fastHitActive = BooleanValue
@@ -292,13 +261,13 @@ local AutoPunchSwitch = KillTab:AddSwitch("Auto Punch", function(BooleanValue)
 end)
 AutoPunchSwitch:Set(false)
 
-local function removePunchAnimation()
+local function removePunchAnimations()
     local Character = LocalPlayer.Character
     if Character and Character:FindFirstChild("Humanoid") then
         local Animator = Character.Humanoid:FindFirstChild("Animator")
         if Animator then
             for _, Track in pairs(Animator:GetPlayingAnimationTracks()) do
-                if Track.Animation.AnimationId == "rbxassetid://3638729053" or Track.Animation.AnimationId == "rbxassetid://3638767427" then
+                if Track.Animation and (Track.Animation.AnimationId == "rbxassetid://3638729053" or Track.Animation.AnimationId == "rbxassetid://3638767427") then
                     Track:Stop()
                     Track:Destroy()
                 end
@@ -307,76 +276,32 @@ local function removePunchAnimation()
     end
 end
 
-KillTab:AddButton("Remove Punch Anim", removePunchAnimation)
+KillTab:AddButton("Remove Punch Anim", removePunchAnimations)
 
-local ViewDropdown = KillTab:AddDropdown("Select View Target", function(Value)
-    _G.ViewTarget = Value
-end)
-
-local ViewPlayerSwitch = KillTab:AddSwitch("View Player", function(BooleanValue)
-    _G.viewPlayer = BooleanValue
-    task.spawn(function()
-        while _G.viewPlayer do
-            pcall(function()
-                local Target = nil
-                for _, Player in pairs(PlayerService:GetPlayers()) do
-                    if Player.DisplayName == _G.ViewTarget then
-                        Target = Player
-                        break
-                    end
-                end
-
-                if Target and Target.Character and Target.Character:FindFirstChild("Humanoid") then
-                    workspace.CurrentCamera.CameraSubject = Target.Character.Humanoid
-                else
-                    workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
-                end
-            end)
-            task.wait(0.1)
-        end
-        -- Reset camera when stopped
-        workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
-    end)
-end)
-ViewPlayerSwitch:Set(false)
-
-local function changeTime(Value)
-    local Lighting = game:GetService("Lighting")
-    Lighting.Brightness = 2
-    Lighting.FogEnd = 100000
-    Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-    if Value == "Midnight" then
-        Lighting.ClockTime = 0
-    elseif Value == "Morning" then
-        Lighting.ClockTime = 8
-    elseif Value == "Noon" then
-        Lighting.ClockTime = 12
-    elseif Value == "Afternoon" then
-        Lighting.ClockTime = 14
-    elseif Value == "Sunset" then
-        Lighting.ClockTime = 18
-    elseif Value == "Night" then
-        Lighting.ClockTime = 20
-    elseif Value == "Dawn" then
-        Lighting.ClockTime = 6
-    elseif Value == "Early Morning" then
-        Lighting.ClockTime = 5
+local TimeDropdown = KillTab:AddDropdown("Change Time", function(Value)
+    local LightingService = Lighting
+    LightingService.Brightness = 2
+    LightingService.FogEnd = 100000
+    LightingService.Ambient = Color3.fromRGB(127, 127, 127)
+    if Value == "Midnight" then LightingService.ClockTime = 0
+    elseif Value == "Morning" then LightingService.ClockTime = 8
+    elseif Value == "Noon" then LightingService.ClockTime = 12
+    elseif Value == "Afternoon" then LightingService.ClockTime = 14
+    elseif Value == "Sunset" then LightingService.ClockTime = 18
+    elseif Value == "Night" then LightingService.ClockTime = 20
+    elseif Value == "Dawn" then LightingService.ClockTime = 6
+    elseif Value == "Early Morning" then LightingService.ClockTime = 5
     end
-end
-
-local TimeDropdown = KillTab:AddDropdown("Change Time", changeTime)
+end)
 local Times = {"Morning", "Noon", "Afternoon", "Sunset", "Night", "Midnight", "Dawn", "Early Morning"}
-for _, timeName in ipairs(Times) do
-    TimeDropdown:Add(timeName)
-end
+for _, LoopVariable in ipairs(Times) do TimeDropdown:Add(LoopVariable) end
 
--- Credits
 CreditsTab:AddLabel("Script Made by: invincible")
 CreditsTab:AddButton("Copy Discord Link", function()
     setclipboard("https://discord.gg/dhySgMQx")
 end)
 
--- Tool toggles
+-- Tool toggles (slow tool activation)
 toolsFolder:AddSwitch("Auto Pushups", function(s)
     states.AutoPushups = s
     if s then startAutoToolFarm("Pushups", "AutoPushups") end
@@ -422,7 +347,7 @@ toolsFolder:AddButton("Anti-Lag (FPS Boost)", function()
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end)
 
--- Teleports (mostly unchanged - still safe)
+-- Teleports
 teleportTab:AddButton("Spawn / Safe", function() safeTp(Vector3.new(-6, 5, -196)) end)
 teleportTab:AddButton("Secret Area", function() safeTp(Vector3.new(1947, 2, 6191)) end)
 teleportTab:AddButton("Tiny Area", function() safeTp(Vector3.new(-39, 6, 1886)) end)
@@ -433,7 +358,7 @@ teleportTab:AddButton("Legend Area", function() safeTp(Vector3.new(4603, 990, -3
 teleportTab:AddButton("Muscle King Area", function() safeTp(Vector3.new(-8626, 16, -5730)) end)
 teleportTab:AddButton("Jungle Area", function() safeTp(Vector3.new(-8642, 6, 2381)) end)
 
--- Rock Farm switches
+-- Rock Farm (slow)
 rockFolder:AddSwitch("Farm Tiny Island Rock (0)", function(s) setRockFarm(0, s) end)
 rockFolder:AddSwitch("Farm Starter Rock (100)", function(s) setRockFarm(100, s) end)
 rockFolder:AddSwitch("Farm Legend Beach Rock (5000)", function(s) setRockFarm(5000, s) end)
@@ -449,13 +374,14 @@ rockFolder:AddButton("STOP Rock Farming", function()
     getgenv().selectedRockDurability = 0
 end)
 
--- Rebirth controls
+-- Rebirth tab
 local rebirthFolder = rebirthTab:AddFolder("Rebirth Controls")
+
 rebirthFolder:AddSwitch("Auto Rebirth (Slow)", toggleAutoRebirth)
 
 rebirthFolder:AddInput("Target Rebirths", function(value)
     local num = tonumber(value)
-    targetRebirths = num and math.max(1, num) or 1
+    targetRebirths = num and math.max(1, math.floor(num)) or 1
 end)
 
 rebirthFolder:AddSwitch("Auto Rebirth → Target", function(s)
@@ -475,7 +401,9 @@ rebirthFolder:AddSwitch("Auto Rebirth → Target", function(s)
     end
 end)
 
--- Cleanup on script close
+creditsTab:AddParagraph("Note", "Use alt • Slow farming = safer • Remote spam is mostly patched in 2026")
+
+-- Cleanup on script end (optional)
 game:BindToClose(function()
     getgenv().NexusRunning = false
 end)
