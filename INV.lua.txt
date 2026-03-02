@@ -43,7 +43,7 @@ getgenv().rockFarmActive = false
 getgenv().selectedRockDurability = 0
 
 -- Helpers
-local muscleEvent = ReplicatedStorage:FindFirstChild("muscleEvent", true) -- probably wrong in 2026
+local muscleEvent = ReplicatedStorage:FindFirstChild("muscleEvent", true) -- verify in 2026
 
 local function safeTp(pos)
     pcall(function()
@@ -58,7 +58,7 @@ local function equipAndActivate(toolName)
     pcall(function()
         local char = LocalPlayer.Character
         if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return end
-        
+
         local tool = LocalPlayer.Backpack:FindFirstChild(toolName) or char:FindFirstChild(toolName)
         if tool then
             if tool.Parent ~= char then
@@ -70,7 +70,7 @@ local function equipAndActivate(toolName)
     end)
 end
 
--- Safer auto tool farm
+-- Auto Tool Farm
 local function startAutoToolFarm(toolName, stateKey)
     task.spawn(function()
         while states[stateKey] and getgenv().NexusRunning do
@@ -117,19 +117,19 @@ task.spawn(function()
             task.wait(1.2)
             continue
         end
-        
+
         pcall(function()
             local char = LocalPlayer.Character
             if not char or char.Humanoid.Health <= 0 then task.wait(2.5) return end
-            
+
             local dur = LocalPlayer:FindFirstChild("Durability")
             if not dur or dur.Value < getgenv().selectedRockDurability then
                 task.wait(1.8)
                 return
             end
-            
+
             equipAndActivate("Punch")
-            
+
             for _, obj in pairs(workspace.machinesFolder:GetDescendants()) do
                 if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == getgenv().selectedRockDurability then
                     local rock = obj.Parent:FindFirstChild("Rock")
@@ -137,17 +137,17 @@ task.spawn(function()
                         local hand = char:FindFirstChild("RightHand") or char:FindFirstChild("LeftHand")
                         if hand then
                             firetouchinterest(rock, hand, 0)
-                            task.wait(0.09 + math.random(0, 30)/100)
+                            task.wait(0.09 + math.random(0, 30) / 100)
                             firetouchinterest(rock, hand, 1)
                         end
-                        task.wait(0.7 + math.random(20, 90)/100)
+                        task.wait(0.7 + math.random(20, 90) / 100)
                         break
                     end
                 end
             end
         end)
-        
-        task.wait(1.1 + math.random(30, 120)/100)
+
+        task.wait(1.1 + math.random(30, 120) / 100)
     end
 end)
 
@@ -163,7 +163,7 @@ local function setRockFarm(dur, enable)
     end
 end
 
--- Safer rebirth
+-- Rebirth
 local function tryRebirth()
     pcall(function()
         local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
@@ -183,7 +183,7 @@ local function toggleAutoRebirth(state)
                 if rebirths then
                     tryRebirth()
                 end
-                task.wait(2.8 + math.random(100, 400)/100)
+                task.wait(2.8 + math.random(100, 400) / 100)
             end
         end)
     else
@@ -216,12 +216,14 @@ _G.selectedPet        = ""
 
 -- Player list update (for dropdowns)
 local function UpdatePlayerLists()
-    WhitelistDropdown:Clear()
-    ViewDropdown:Clear()
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            WhitelistDropdown:Add(plr.DisplayName)
-            ViewDropdown:Add(plr.DisplayName)
+    if WhitelistDropdown then
+        WhitelistDropdown:Clear()
+        ViewDropdown:Clear()
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer then
+                WhitelistDropdown:Add(plr.DisplayName)
+                ViewDropdown:Add(plr.DisplayName)
+            end
         end
     end
 end
@@ -232,7 +234,7 @@ task.wait(0.5)
 UpdatePlayerLists()
 
 -- Kill Tab content
-killTab:AddLabel("Select damage or durability pet")
+local labelPet = killTab:AddLabel("Select damage or durability pet")
 local PetSelector = killTab:AddDropdown("Select Pet", function(Value)
     _G.selectedPet = Value
 end)
@@ -295,9 +297,7 @@ killTab:AddSwitch("Auto Punch", function(bool)
     end)
 end):Set(false)
 
--- ... (rest of Kill tab features like Remove Punch Anim, View Player, Size buttons, Time changer, etc.)
-
--- Example fix for size buttons (using correct service)
+-- Buttons for changing size
 killTab:AddButton("Size 30", function()
     pcall(function()
         ReplicatedStorage:WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer("changeSize", 30)
@@ -310,12 +310,12 @@ killTab:AddButton("Size 2", function()
     end)
 end)
 
--- Time changer (fixed Lighting)
+-- Change Time (Lighting)
 local TimeDropdown = killTab:AddDropdown("Change Time", function(value)
     Lighting.Brightness = 2
     Lighting.FogEnd = 100000
     Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-    
+
     local times = {
         Midnight       = 0,
         Morning        = 8,
@@ -335,7 +335,7 @@ for _, t in ipairs({"Morning", "Noon", "Afternoon", "Sunset", "Night", "Midnight
     TimeDropdown:Add(t)
 end
 
--- Blacklist (commented - most executors don't have file functions)
+-- Blacklist (commented out, optional)
 --[[
 local BlacklistFileName = "GenesisBlacklist_" .. LocalPlayer.Name .. ".txt"
 if not isfile(BlacklistFileName) then writefile(BlacklistFileName, "") end
@@ -354,8 +354,8 @@ end)
 creditsTab:AddParagraph("Note", "Use alt • Slow farming = safer • Remote spam is mostly patched in 2026")
 
 -- Tool toggles
-toolsFolder:AddSwitch("Auto Pushups",    function(s) states.AutoPushups = s    if s then startAutoToolFarm("Pushups",    "AutoPushups")    end end)
-toolsFolder:AddSwitch("Auto Weight",     function(s) states.AutoWeight = s     if s then startAutoToolFarm("Weight",     "AutoWeight")     end end)
+toolsFolder:AddSwitch("Auto Pushups", function(s) states.AutoPushups = s if s then startAutoToolFarm("Pushups", "AutoPushups") end end)
+toolsFolder:AddSwitch("Auto Weight", function(s) states.AutoWeight = s if s then startAutoToolFarm("Weight", "AutoWeight") end end)
 toolsFolder:AddSwitch("Auto Handstands", function(s) states.AutoHandstands = s if s then startAutoToolFarm("Handstands", "AutoHandstands") end end)
 
 toolsFolder:AddSwitch("Auto Punch (Safe)", function(s)
@@ -364,59 +364,59 @@ toolsFolder:AddSwitch("Auto Punch (Safe)", function(s)
         task.spawn(function()
             while states.FastPunch and getgenv().NexusRunning do
                 equipAndActivate("Punch")
-                task.wait(0.48 + math.random(20, 90)/100)
+                task.wait(0.48 + math.random(20, 90) / 100)
             end
         end)
     end
 end)
 
 toolsFolder:AddSwitch("Infinite Jump", toggleInfiniteJump)
-toolsFolder:AddSwitch("Anti-AFK",      toggleAntiAfk)
+toolsFolder:AddSwitch("Anti-AFK", toggleAntiAfk)
 
 toolsFolder:AddButton("Anti-Lag (FPS Boost)", function()
     Lighting.GlobalShadows = false
     Lighting.Brightness = 1.2
     Lighting.ClockTime = 14
     Lighting.FogEnd = 99999
-    
+
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or
            v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect") then
             v.Enabled = false
         end
     end
-    
+
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end)
 
 -- Teleports
-teleportTab:AddButton("Spawn / Safe",        function() safeTp(Vector3.new(-6,    5,   -196))   end)
-teleportTab:AddButton("Secret Area",         function() safeTp(Vector3.new(1947,  2,   6191))   end)
-teleportTab:AddButton("Tiny Area",           function() safeTp(Vector3.new(-39,   6,   1886))   end)
-teleportTab:AddButton("Frozen Area",         function() safeTp(Vector3.new(-2623, 6,   -409))   end)
-teleportTab:AddButton("Mythical Area",       function() safeTp(Vector3.new(2251,  6,   1073))   end)
-teleportTab:AddButton("Inferno Area",        function() safeTp(Vector3.new(-6759, 6,   -1285))  end)
-teleportTab:AddButton("Legend Area",         function() safeTp(Vector3.new(4603,  990, -3898))  end)
-teleportTab:AddButton("Muscle King Area",    function() safeTp(Vector3.new(-8626, 16,  -5730))  end)
-teleportTab:AddButton("Jungle Area",         function() safeTp(Vector3.new(-8642, 6,   2381))   end)
+teleportTab:AddButton("Spawn / Safe", function() safeTp(Vector3.new(-6, 5, -196)) end)
+teleportTab:AddButton("Secret Area", function() safeTp(Vector3.new(1947, 2, 6191)) end)
+teleportTab:AddButton("Tiny Area", function() safeTp(Vector3.new(-39, 6, 1886)) end)
+teleportTab:AddButton("Frozen Area", function() safeTp(Vector3.new(-2623, 6, -409)) end)
+teleportTab:AddButton("Mythical Area", function() safeTp(Vector3.new(2251, 6, 1073)) end)
+teleportTab:AddButton("Inferno Area", function() safeTp(Vector3.new(-6759, 6, -1285)) end)
+teleportTab:AddButton("Legend Area", function() safeTp(Vector3.new(4603, 990, -3898)) end)
+teleportTab:AddButton("Muscle King Area", function() safeTp(Vector3.new(-8626, 16, -5730)) end)
+teleportTab:AddButton("Jungle Area", function() safeTp(Vector3.new(-8642, 6, 2381)) end)
 
 -- Rock Farm switches
-rockFolder:AddSwitch("Farm Tiny Island Rock (0)",        function(s) setRockFarm(0,         s) end)
-rockFolder:AddSwitch("Farm Starter Rock (100)",          function(s) setRockFarm(100,       s) end)
-rockFolder:AddSwitch("Farm Legend Beach Rock (5000)",    function(s) setRockFarm(5000,      s) end)
-rockFolder:AddSwitch("Farm Frost Gym Rock (150k)",       function(s) setRockFarm(150000,    s) end)
-rockFolder:AddSwitch("Farm Mythical Gym Rock (400k)",    function(s) setRockFarm(400000,    s) end)
-rockFolder:AddSwitch("Farm Eternal Gym Rock (750k)",     function(s) setRockFarm(750000,    s) end)
-rockFolder:AddSwitch("Farm Legend Gym Rock (1M)",        function(s) setRockFarm(1000000,   s) end)
-rockFolder:AddSwitch("Farm Muscle King Rock (5M)",       function(s) setRockFarm(5000000,   s) end)
-rockFolder:AddSwitch("Farm Ancient Jungle Rock (10M)",   function(s) setRockFarm(10000000,  s) end)
+rockFolder:AddSwitch("Farm Tiny Island Rock (0)", function(s) setRockFarm(0, s) end)
+rockFolder:AddSwitch("Farm Starter Rock (100)", function(s) setRockFarm(100, s) end)
+rockFolder:AddSwitch("Farm Legend Beach Rock (5000)", function(s) setRockFarm(5000, s) end)
+rockFolder:AddSwitch("Farm Frost Gym Rock (150k)", function(s) setRockFarm(150000, s) end)
+rockFolder:AddSwitch("Farm Mythical Gym Rock (400k)", function(s) setRockFarm(400000, s) end)
+rockFolder:AddSwitch("Farm Eternal Gym Rock (750k)", function(s) setRockFarm(750000, s) end)
+rockFolder:AddSwitch("Farm Legend Gym Rock (1M)", function(s) setRockFarm(1000000, s) end)
+rockFolder:AddSwitch("Farm Muscle King Rock (5M)", function(s) setRockFarm(5000000, s) end)
+rockFolder:AddSwitch("Farm Ancient Jungle Rock (10M)", function(s) setRockFarm(10000000, s) end)
 
 rockFolder:AddButton("STOP Rock Farming", function()
     getgenv().rockFarmActive = false
     getgenv().selectedRockDurability = 0
 end)
 
--- Rebirth tab
+-- Rebirth Controls
 local rebirthFolder = rebirthTab:AddFolder("Rebirth Controls")
 rebirthFolder:AddSwitch("Auto Rebirth (Slow)", toggleAutoRebirth)
 
@@ -436,7 +436,7 @@ rebirthFolder:AddSwitch("Auto Rebirth → Target", function(s)
                     return
                 end
                 tryRebirth()
-                task.wait(3.2 + math.random(80, 300)/100)
+                task.wait(3.2 + math.random(80, 300) / 100)
             end
         end)
     end
