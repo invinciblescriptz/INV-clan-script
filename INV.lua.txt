@@ -221,7 +221,7 @@ toolsFolder:AddButton("Free AutoLift Gamepass", function()
 end)
 
 -- Teleport Buttons
-local function teleportTo(pos)
+local function tpTo(pos)
     tpTo(pos)
 end
 
@@ -364,5 +364,6 @@ RebirthFolder:AddSwitch("Auto Rebirth to Target", function(s)
 end)
 
 -- Corrected Credits Labels
+local CreditsTab = window:AddTab("Credits")
 CreditsTab:AddLabel("made by Invincible")
 CreditsTab:AddLabel("https://discord.gg/8pyQJgGg")
