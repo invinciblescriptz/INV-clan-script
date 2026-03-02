@@ -141,8 +141,8 @@ local CreditsTab = window:AddTab("Credits")
 
 local toolsFolder = mainTab:AddFolder("Tools")
 local rockFarmFolder = mainTab:AddFolder("Rock Farm")
-local killerFolder = killTab:AddFolder("Auto Kill")
-local brawlFarmingFolder = miscTab:AddFolder("Brawl Farming")
+local killerFolder = mainTab:AddFolder("Auto Kill")
+local brawlFarmingFolder = mainTab:AddFolder("Brawl Farming") -- corrected variable name
 
 -- Tool switches
 toolsFolder:AddSwitch("Auto Pushups", function(s)
@@ -363,8 +363,6 @@ RebirthFolder:AddSwitch("Auto Rebirth to Target", function(s)
     end
 end)
 
-CreditsTab = window:AddLabel("made by Invincible",
-end)
-
-CreditsTab = window:AddLabel("https://discord.gg/8pyQJgGg",
-end)
+-- Corrected Credits Labels
+CreditsTab:AddLabel("made by Invincible")
+CreditsTab:AddLabel("https://discord.gg/8pyQJgGg")
