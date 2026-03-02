@@ -65,7 +65,11 @@ local function equipAndActivate(toolName)
                 char.Humanoid:EquipTool(tool)
                 task.wait(0.18)
             end
-            tool:Activate()
+            -- Make sure tool has Activate method
+            if tool:IsA("Tool") then
+                -- Safely activate
+                pcall(function() tool:Activate() end)
+            end
         end
     end)
 end
@@ -115,7 +119,7 @@ task.spawn(function()
     while getgenv().NexusRunning do
         if not getgenv().rockFarmActive or getgenv().selectedRockDurability <= 0 then
             task.wait(1.2)
-            continue
+            continue -- Lua doesn't support continue, so replace with an if block
         end
 
         pcall(function()
@@ -163,7 +167,7 @@ local function setRockFarm(dur, enable)
     end
 end
 
--- Rebirth
+-- Rebirth function
 local function tryRebirth()
     pcall(function()
         local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
@@ -187,7 +191,10 @@ local function toggleAutoRebirth(state)
             end
         end)
     else
-        if rebirthLoop then task.cancel(rebirthLoop) rebirthLoop = nil end
+        if rebirthLoop then
+            task.cancel(rebirthLoop)
+            rebirthLoop = nil
+        end
     end
 end
 
@@ -206,7 +213,7 @@ local rockFolder  = mainTab:AddFolder("Rock Farm")
 
 -- Global toggles / vars used in Kill tab
 _G.autoGoodKarma      = false
-_G.autoBadKarma       = false   -- never used, can remove
+_G.autoBadKarma       = false   -- not used, can remove if desired
 _G.fastHitActive      = false
 _G.whitelistedPlayers = _G.whitelistedPlayers or {}
 _G.viewPlayer         = false
@@ -214,7 +221,7 @@ _G.ViewTarget         = ""
 _G.autoWhitelistFriends = false
 _G.selectedPet        = ""
 
--- Player list update (for dropdowns)
+-- Player list update
 local function UpdatePlayerLists()
     if WhitelistDropdown then
         WhitelistDropdown:Clear()
@@ -244,7 +251,7 @@ PetSelector:Add("Mighty Monster")
 killTab:AddSwitch("Auto Good Karma", function(bool)
     _G.autoGoodKarma = bool
     task.spawn(function()
-        while _G.autoGoodKarma do
+        while _G.autoGoodKarma and getgenv().NexusRunning do
             pcall(function()
                 local char = LocalPlayer.Character
                 if char then
@@ -263,7 +270,7 @@ end):Set(false)
 killTab:AddSwitch("Auto Whitelist Friends", function(bool)
     _G.autoWhitelistFriends = bool
     task.spawn(function()
-        while _G.autoWhitelistFriends do
+        while _G.autoWhitelistFriends and getgenv().NexusRunning do
             pcall(function()
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= LocalPlayer and LocalPlayer:IsFriendsWith(plr.UserId) then
@@ -289,24 +296,28 @@ end)
 
 killTab:AddSwitch("Auto Punch", function(bool)
     _G.fastHitActive = bool
-    task.spawn(function()
-        while _G.fastHitActive do
-            equipAndActivate("Punch")
-            task.wait(0.1)
-        end
-    end)
+    if bool then
+        task.spawn(function()
+            while _G.fastHitActive and getgenv().NexusRunning do
+                equipAndActivate("Punch")
+                task.wait(0.1)
+            end
+        end)
+    end
 end):Set(false)
 
 -- Buttons for changing size
 killTab:AddButton("Size 30", function()
     pcall(function()
-        ReplicatedStorage:WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer("changeSize", 30)
+        local remote = ReplicatedStorage:WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote")
+        remote:InvokeServer("changeSize", 30)
     end)
 end)
 
 killTab:AddButton("Size 2", function()
     pcall(function()
-        ReplicatedStorage:WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer("changeSize", 2)
+        local remote = ReplicatedStorage:WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote")
+        remote:InvokeServer("changeSize", 2)
     end)
 end)
 
@@ -335,7 +346,7 @@ for _, t in ipairs({"Morning", "Noon", "Afternoon", "Sunset", "Night", "Midnight
     TimeDropdown:Add(t)
 end
 
--- Blacklist (commented out, optional)
+-- Blacklist (if needed)
 --[[
 local BlacklistFileName = "GenesisBlacklist_" .. LocalPlayer.Name .. ".txt"
 if not isfile(BlacklistFileName) then writefile(BlacklistFileName, "") end
@@ -350,13 +361,21 @@ creditsTab:AddLabel("Script Made by: invincible")
 creditsTab:AddButton("Copy Discord Link", function()
     setclipboard("https://discord.gg/dhySgMQx")
 end)
-
 creditsTab:AddParagraph("Note", "Use alt • Slow farming = safer • Remote spam is mostly patched in 2026")
 
 -- Tool toggles
-toolsFolder:AddSwitch("Auto Pushups", function(s) states.AutoPushups = s if s then startAutoToolFarm("Pushups", "AutoPushups") end end)
-toolsFolder:AddSwitch("Auto Weight", function(s) states.AutoWeight = s if s then startAutoToolFarm("Weight", "AutoWeight") end end)
-toolsFolder:AddSwitch("Auto Handstands", function(s) states.AutoHandstands = s if s then startAutoToolFarm("Handstands", "AutoHandstands") end end)
+toolsFolder:AddSwitch("Auto Pushups", function(s)
+    states.AutoPushups = s
+    if s then startAutoToolFarm("Pushups", "AutoPushups") end
+end)
+toolsFolder:AddSwitch("Auto Weight", function(s)
+    states.AutoWeight = s
+    if s then startAutoToolFarm("Weight", "AutoWeight") end
+end)
+toolsFolder:AddSwitch("Auto Handstands", function(s)
+    states.AutoHandstands = s
+    if s then startAutoToolFarm("Handstands", "AutoHandstands") end
+end)
 
 toolsFolder:AddSwitch("Auto Punch (Safe)", function(s)
     states.FastPunch = s
@@ -442,7 +461,7 @@ rebirthFolder:AddSwitch("Auto Rebirth → Target", function(s)
     end
 end)
 
--- Cleanup
+-- Cleanup on close
 game:BindToClose(function()
     getgenv().NexusRunning = false
 end)
