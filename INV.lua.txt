@@ -1,9 +1,10 @@
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Rizwanelansyah/windui.nvim/refs/heads/main/lua/windui/flex_box.lua", true))()
-local window = library:AddWindow("Invincibles Priv Script", {
-    main_color = Color3.fromRGB(0, 0, 0),
-    min_size = Vector2.new(470, 470),
-    can_resize = false,
-})
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Rizwanelansyah/windui.nvim/refs/heads/main/lua/windui/flex_box.lua", true))
+if library then
+    print("Library loaded successfully")
+else
+    print("Failed to load library")
+end
+library = library and library()
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
