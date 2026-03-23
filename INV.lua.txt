@@ -22,7 +22,7 @@ local tabInfo     = window:AddTab("Information")
 local tabMain     = window:AddTab("Main")
 local tabTeleport = window:AddTab("Teleport")
 local tabRebirth  = window:AddTab("Rebirth")
-
+local killerTab  = window:AddTab("Killer")
 -- Information
 tabInfo:AddLabel("Invincible likes ninja turtles").TextSize = 24
 tabInfo:AddLabel("Made by invincible").TextSize = 22
@@ -490,8 +490,6 @@ game:BindToClose(function()
     end
 end)
 
--- Killer Tab
-local killerTab = window:AddTab("Killer")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local playerWhitelist = {}
