@@ -554,3 +554,189 @@ game:BindToClose(function()
         pcall(function() c:Disconnect() end)
     end
 end)
+
+tabKiller:AddLabel("more killing").TextSize = 22
+
+-- ====================== KILLER TAB - ALL AUTO KILL FEATURES COMBINED ======================
+-- Paste this ENTIRE block right after the Rock Farm UI section (before -- Rebirth Tab)
+
+local killAuraRunning = false
+local killAuraTask = nil
+
+local selectedTarget = nil
+local targetKillRunning = false
+local targetKillTask = nil
+
+local autoVoidRunning = false
+local autoVoidTask = nil
+
+-- Kill Aura (Touch + Fast Punch integration)
+tabKiller:AddSwitch("Kill Aura (Touch 18 studs)", function(state)
+    killAuraRunning = state
+    if state then
+        killAuraTask = task.spawn(function()
+            while killAuraRunning and getgenv().NexusRunning do
+                pcall(function()
+                    local myHRP = getHRP()
+                    if not myHRP then return end
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= LP and plr.Character then
+                            local theirHRP = plr.Character:FindFirstChild("HumanoidRootPart")
+                            local theirHum  = plr.Character:FindFirstChildOfClass("Humanoid")
+                            if theirHRP and theirHum and theirHum.Health > 0 then
+                                local dist = (theirHRP.Position - myHRP.Position).Magnitude
+                                if dist < 18 then
+                                    firetouchinterest(myHRP, theirHRP, 0)
+                                    task.wait(0.025)
+                                    firetouchinterest(myHRP, theirHRP, 1)
+                                    
+                                    -- Auto spam punch if Fast Punch is on
+                                    if states.FastPunch then
+                                        muscleEvent:FireServer("punch", "leftHand")
+                                        muscleEvent:FireServer("punch", "rightHand")
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end)
+                task.wait(0.08)
+            end
+            killAuraTask = nil
+        end)
+    else
+        killAuraRunning = false
+    end
+end)
+
+-- Target Selector (TextBox + Lock Button)
+tabKiller:AddTextbox("Target Player Name", "", function(txt)
+    selectedTarget = nil
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Name:lower() == txt:lower() or (plr.DisplayName and plr.DisplayName:lower() == txt:lower()) then
+            selectedTarget = plr
+            VU:Notify("Target locked → " .. plr.Name, 3, Color3.fromRGB(0, 255, 0))
+            return
+        end
+    end
+    VU:Notify("Player not found!", 3, Color3.fromRGB(255, 0, 0))
+end)
+
+tabKiller:AddButton("🔒 Lock & Auto-Kill Selected Target", function()
+    if not selectedTarget then
+        VU:Notify("No target selected!", 3, Color3.fromRGB(255, 0, 0))
+        return
+    end
+    
+    targetKillRunning = not targetKillRunning
+    
+    if targetKillRunning then
+        targetKillTask = task.spawn(function()
+            while targetKillRunning and selectedTarget and getgenv().NexusRunning do
+                pcall(function()
+                    if selectedTarget.Character then
+                        local targetHRP = selectedTarget.Character:FindFirstChild("HumanoidRootPart")
+                        local myHRP = getHRP()
+                        if targetHRP and myHRP then
+                            local dist = (targetHRP.Position - myHRP.Position).Magnitude
+                            if dist < 60 then
+                                myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3)
+                                firetouchinterest(myHRP, targetHRP, 0)
+                                task.wait(0.02)
+                                firetouchinterest(myHRP, targetHRP, 1)
+                                
+                                muscleEvent:FireServer("punch", "leftHand")
+                                muscleEvent:FireServer("punch", "rightHand")
+                                muscleEvent:FireServer("slam")
+                            end
+                        end
+                    end
+                end)
+                task.wait(0.06)
+            end
+            targetKillTask = nil
+        end)
+        VU:Notify("AUTO KILLING " .. selectedTarget.Name .. " (toggle again to stop)", 4, Color3.fromRGB(255, 100, 0))
+    else
+        targetKillRunning = false
+        VU:Notify("Target kill stopped", 3)
+    end
+end)
+
+-- Void Kills
+tabKiller:AddButton("🌌 Void All Nearby Players (One Click)", function()
+    pcall(function()
+        local myHRP = getHRP()
+        if not myHRP then return end
+        local count = 0
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LP and plr.Character then
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp and (hrp.Position - myHRP.Position).Magnitude < 40 then
+                    hrp.CFrame = CFrame.new(0, -600, 0)
+                    count += 1
+                end
+            end
+        end
+        VU:Notify("Voided " .. count .. " players", 3, Color3.fromRGB(0, 200, 255))
+    end)
+end)
+
+tabKiller:AddSwitch("Auto Void Nearby (25 studs)", function(state)
+    autoVoidRunning = state
+    if state then
+        autoVoidTask = task.spawn(function()
+            while autoVoidRunning and getgenv().NexusRunning do
+                pcall(function()
+                    local myHRP = getHRP()
+                    if not myHRP then return end
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= LP and plr.Character then
+                            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                            if hrp and (hrp.Position - myHRP.Position).Magnitude < 25 then
+                                hrp.CFrame = CFrame.new(0, -600, 0)
+                            end
+                        end
+                    end
+                end)
+                task.wait(0.35)
+            end
+            autoVoidTask = nil
+        end)
+    else
+        autoVoidRunning = false
+    end
+end)
+
+-- Extra: Kill All Button (aggressive)
+tabKiller:AddButton("💀 Kill Everyone (Mass Touch + Void)", function()
+    pcall(function()
+        local myHRP = getHRP()
+        if not myHRP then return end
+        local count = 0
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LP and plr.Character then
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    firetouchinterest(myHRP, hrp, 0)
+                    task.wait(0.02)
+                    firetouchinterest(myHRP, hrp, 1)
+                    hrp.CFrame = CFrame.new(0, -600, 0)
+                    count += 1
+                end
+            end
+        end
+        VU:Notify("Mass killed " .. count .. " players", 4, Color3.fromRGB(255, 0, 100))
+    end)
+end)
+
+-- Remote Spam Placeholder (uncomment + replace if you find the real damage remote)
+--[[
+tabKiller:AddSwitch("Remote Spam Kill (if remote found)", function(state)
+    -- Example only - replace "damageEvent" with actual remote name
+    -- local dmgRemote = RS.rEvents:FindFirstChild("hitPlayer") or RS:FindFirstChild("damageEvent")
+    -- if state and dmgRemote then ... fire every 0.05s
+end)
+]]
+
+print("[INV] All Auto-Kill features loaded (Aura + Target + Void + Mass)")
