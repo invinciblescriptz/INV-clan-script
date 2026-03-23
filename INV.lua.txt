@@ -5,33 +5,15 @@ local window = library:AddWindow("Invincibles Priv Script", {
     can_resize = false,
 })
 
-local informationTab = window:AddTab("Information")
-informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 18
-informationTab:AddLabel("Made by invincible").TextSize = 9
-informationTab:AddLabel("Im a dumbass dm 999krxzy on discord if you find any issues").TextSize = 5
-
-informationTab:AddButton("Auto Lift Gamepass (Free)", function()
-    pcall(function()
-        local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
-        if not gpFolder then return end
-        local owned = LocalPlayer:FindFirstChild("ownedGamepasses") or Instance.new("Folder")
-        owned.Name = "ownedGamepasses"
-        owned.Parent = LocalPlayer
-        for _, gp in pairs(gpFolder:GetChildren()) do
-            if gp:IsA("IntValue") then
-                local val = Instance.new("IntValue")
-                val.Name = gp.Name
-                val.Value = gp.Value
-                val.Parent = owned
-            end
-        end
-    end)
-end)
-
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local workspace = game:GetService("Workspace")
+
+-- Assuming getg() is a global table
+if not _G then _G = {} end
+local getg = function() return _G end
 
 -- Wait for muscleEvent to exist
 local muscleEvent
@@ -43,12 +25,11 @@ task.spawn(function()
     print("muscleEvent found:", muscleEvent)
 end)
 
--- Utility: firetouchinterest (some exploits might already have it)
+-- Utility: firetouchinterest
 local function fireTouch(part1, part2, toggle)
     if firetouchinterest then
         firetouchinterest(part1, part2, toggle)
     else
-        -- fallback if needed
         print("firetouchinterest not found")
     end
 end
@@ -67,6 +48,7 @@ local main = window:AddTab("Main")
 local ToolsFolder = main:AddFolder("Tools")
 local TeleportTab = window:AddTab("Teleport")
 local KillTab = main:AddTab("Kill")
+local farmTab = main:AddTab("Farm") -- For farming tools
 
 -- Teleport Buttons
 local teleportButtons = {
@@ -84,17 +66,24 @@ local teleportButtons = {
     {"To Beach Brawl", Vector3.new(-1849, 20, -6335)}
 }
 
--- Kill all players
+for _, btn in pairs(teleportButtons) do
+    local name, position = unpack(btn)
+    TeleportTab:AddButton(name, function()
+        tpTo(position)
+    end)
+end
+
+-- Auto Kill All Players
 local killAll = false
 local function killLoop()
     while killAll do
         for _, plr in pairs(Players:GetPlayers()) do
             if plr ~= LP and plr.Character then
-                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-                local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-                if hrp and myHRP then
-                    fireTouch(hrp, myHRP, 0)
-                    fireTouch(hrp, myHRP, 1)
+                local hrp_target = plr.Character:FindFirstChild("HumanoidRootPart")
+                local hrp_self = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+                if hrp_target and hrp_self then
+                    fireTouch(hrp_target, hrp_self, 0)
+                    fireTouch(hrp_target, hrp_self, 1)
                 end
             end
         end
@@ -105,7 +94,9 @@ end
 local killFolder = KillTab:AddFolder("Auto Kill")
 killFolder:AddSwitch("Kill All Players", function(state)
     killAll = state
-    if state then task.spawn(killLoop) end
+    if state then
+        task.spawn(killLoop)
+    end
 end)
 
 local targetName = nil
@@ -117,17 +108,17 @@ local dropdown = killFolder:AddDropdown("Target Player", {
 })
 
 killFolder:AddSwitch("Auto Kill Target", function(state)
-    getg().autoKillTarget = state
+    _G.autoKillTarget = state
     if state and targetName then
         task.spawn(function()
-            while getg().autoKillTarget do
+            while _G.autoKillTarget do
                 local tgt = Players:FindFirstChild(targetName)
-                if tgt then
-                    local hrp = tgt.Character and tgt.Character:FindFirstChild("HumanoidRootPart")
-                    local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp and myHRP then
-                        fireTouch(hrp, myHRP, 0)
-                        fireTouch(hrp, myHRP, 1)
+                if tgt and tgt.Character then
+                    local hrp_target = tgt.Character:FindFirstChild("HumanoidRootPart")
+                    local hrp_self = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp_target and hrp_self then
+                        fireTouch(hrp_target, hrp_self, 0)
+                        fireTouch(hrp_target, hrp_self, 1)
                     end
                 end
                 wait(0.08)
@@ -136,7 +127,7 @@ killFolder:AddSwitch("Auto Kill Target", function(state)
     end
 end)
 
--- Update dropdown list of players
+-- Update dropdown list of players periodically
 task.spawn(function()
     while true do
         local list = {}
@@ -154,26 +145,28 @@ end)
 
 -- Auto farm rocks
 local autoFarm = false
-local targetDurability = 0
 local function autoFarmRocks(durability)
     while autoFarm do
-        for _, v in pairs(workspace:FindFirstChild("machinesFolder") and workspace.machinesFolder:GetDescendants() or {}) do
-            if v.Name == "neededDurability" and v.Value == durability then
-                local rock = v.Parent and v.Parent:FindFirstChild("Rock")
-                local char = LP.Character
-                if rock and char and char:FindFirstChild("RightHand") and char:FindFirstChild("LeftHand") then
-                    fireTouch(rock, char.RightHand, 0)
-                    fireTouch(rock, char.RightHand, 1)
-                    fireTouch(rock, char.LeftHand, 0)
-                    fireTouch(rock, char.LeftHand, 1)
-                    -- Punch while farming
-                    if _G.FastPunch then
-                        if muscleEvent then
-                            muscleEvent:FireServer("punch", "rightHand")
-                            muscleEvent:FireServer("punch", "leftHand")
+        local machinesFolder = workspace:FindFirstChild("machinesFolder")
+        if machinesFolder then
+            for _, v in pairs(machinesFolder:GetDescendants()) do
+                if v.Name == "neededDurability" and v.Value == durability then
+                    local rock = v.Parent and v.Parent:FindFirstChild("Rock")
+                    local char = LP.Character
+                    if rock and char and char:FindFirstChild("RightHand") and char:FindFirstChild("LeftHand") then
+                        fireTouch(rock, char.RightHand, 0)
+                        fireTouch(rock, char.RightHand, 1)
+                        fireTouch(rock, char.LeftHand, 0)
+                        fireTouch(rock, char.LeftHand, 1)
+                        -- Punch while farming
+                        if _G.FastPunch then
+                            if muscleEvent then
+                                muscleEvent:FireServer("punch", "rightHand")
+                                muscleEvent:FireServer("punch", "leftHand")
+                            end
+                            local punch = char:FindFirstChild("Punch")
+                            if punch then punch:Activate() end
                         end
-                        local punch = char:FindFirstChild("Punch")
-                        if punch then punch:Activate() end
                     end
                 end
             end
@@ -187,12 +180,14 @@ RockFarmFolder:AddSwitch("Farm Rock (durability 0)", {
     Default = false,
     Callback = function(val)
         autoFarm = val
-        if val then autoFarmRocks(0) end
+        if val then
+            task.spawn(function() autoFarmRocks(0) end)
+        end
     end
 })
 
 -- Fast Punch with auto-equip
-Tools:AddSwitch("Fast Punch", function(state)
+ToolsFolder:AddSwitch("Fast Punch", function(state)
     _G.FastPunch = state
     if state then
         task.spawn(function()
@@ -212,11 +207,11 @@ Tools:AddSwitch("Fast Punch", function(state)
                         muscleEvent:FireServer("punch", "leftHand")
                     end
                     local ch = LP.Character
-                    if not ch:FindFirstChild("Punch") then
+                    if ch and not ch:FindFirstChild("Punch") then
                         local punch = LP.Backpack:FindFirstChild("Punch")
                         if punch then punch.Parent = ch end
                     end
-                    local punch = ch:FindFirstChild("Punch")
+                    local punch = ch and ch:FindFirstChild("Punch")
                     if punch then punch:Activate() end
                 end)
                 wait(0.07)
