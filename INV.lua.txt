@@ -15,9 +15,9 @@ local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
 
 -- Info Tab
 local informationTab = window:AddTab("Information")
-informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 18
-informationTab:AddLabel("Made by invincible").TextSize = 9
-informationTab:AddLabel("Im a dumbass dm 999krxzy on discord if you find any issues").TextSize = 5
+informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 24
+informationTab:AddLabel("Made by invincible").TextSize = 22
+informationTab:AddLabel("Im a dumbass dm 999krxzy on discord if you find any issues").TextSize = 20
 
 -- Button to auto give gamepasses
 informationTab:AddButton("Auto Lift Gamepass (Free)", function()
@@ -73,7 +73,6 @@ end
 local main = window:AddTab("Main")
 local Tools = main:AddFolder("Tools")
 local RockFarmFolder = main:AddFolder("Rock Farm")
-local betterFarmingTab = window:AddTab("better farming")
 
 -- Tools Switches
 Tools:AddSwitch("Auto Pushups", function(state)
