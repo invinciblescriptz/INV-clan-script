@@ -1,10 +1,20 @@
+-- Load the UI library
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Rizwanelansyah/windui.nvim/refs/heads/main/lua/windui/flex_box.lua", true))
 if library then
     print("Library loaded successfully")
 else
-    print("Failed to load library")
+    warn("Failed to load library")
 end
-library = library and library()
+
+-- Instantiate the library
+local libInstance = library and library()
+
+-- Create the main window
+local window = libInstance:AddWindow("Invincibles Priv Script", {
+    main_color = Color3.fromRGB(0, 0, 0),
+    min_size = Vector2.new(470, 470),
+    can_resize = false,
+})
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -14,6 +24,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
 
+-- INFORMATION TAB
 local informationTab = window:AddTab("Information")
 informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 18
 informationTab:AddLabel("Made by invincible").TextSize = 9
@@ -37,7 +48,7 @@ informationTab:AddButton("Auto Lift Gamepass (Free)", function()
     end)
 end)
 
--- AUTO REP (unchanged)
+-- AUTO REP FUNCTION
 local function startAutoRep(toolName, toggleVar)
     task.spawn(function()
         while _G[toggleVar] do
@@ -60,11 +71,13 @@ local function startAutoRep(toolName, toggleVar)
     end)
 end
 
+-- MAIN TAB AND FOLDERS
 local main = window:AddTab("Main")
 local Tools = main:AddFolder("Tools")
 local RockFarmFolder = main:AddFolder("Rock Farm")
 local BetterFarmingTab = window:AddTab("better farming")
 
+-- Tools Switches
 Tools:AddSwitch("Auto Pushups", function(state) _G.AutoPushups = state if state then startAutoRep("Pushups", "AutoPushups") end end)
 Tools:AddSwitch("Auto Weight", function(state) _G.AutoWeight = state if state then startAutoRep("Weight", "AutoWeight") end end)
 Tools:AddSwitch("Auto Handstands", function(state) _G.AutoHandstands = state if state then startAutoRep("Handstands", "AutoHandstands") end end)
@@ -88,27 +101,32 @@ Tools:AddSwitch("Fast Punch", function(state)
     end
 end)
 
--- TELEPORTS (unchanged)
-local Teleport = window:AddTab("Teleport")
+-- TELEPORTS
 local function tpTo(pos)
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if hrp then hrp.CFrame = CFrame.new(pos) end
 end
 
-Teleport:AddButton("To Spawn / Safe Area", function() tpTo(Vector3.new(-6, 5, -196)) end)
-Teleport:AddButton("To Secret Area", function() tpTo(Vector3.new(1947, 2, 6191)) end)
-Teleport:AddButton("To Tiny Area", function() tpTo(Vector3.new(-39, 6, 1886)) end)
-Teleport:AddButton("To Frozen Area", function() tpTo(Vector3.new(-2623, 6, -409)) end)
-Teleport:AddButton("To Mythical Area", function() tpTo(Vector3.new(2251, 6, 1073)) end)
-Teleport:AddButton("To Inferno Area", function() tpTo(Vector3.new(-6759, 6, -1285)) end)
-Teleport:AddButton("To Legend Area", function() tpTo(Vector3.new(4603, 990, -3898)) end)
-Teleport:AddButton("To Muscle King Area", function() tpTo(Vector3.new(-8626, 16, -5730)) end)
-Teleport:AddButton("To Jungle Area", function() tpTo(Vector3.new(-8642, 6, 2381)) end)
-Teleport:AddButton("To Lava Brawl", function() tpTo(Vector3.new(4471, 119, -8836)) end)
-Teleport:AddButton("To Desert Brawl", function() tpTo(Vector3.new(960, 17, -7398)) end)
-Teleport:AddButton("To Beach Brawl", function() tpTo(Vector3.new(-1849, 20, -6335)) end)
+local teleportTab = window:AddTab("Teleport")
+local teleportButtons = {
+    {"To Spawn / Safe Area", Vector3.new(-6, 5, -196)},
+    {"To Secret Area", Vector3.new(1947, 2, 6191)},
+    {"To Tiny Area", Vector3.new(-39, 6, 1886)},
+    {"To Frozen Area", Vector3.new(-2623, 6, -409)},
+    {"To Mythical Area", Vector3.new(2251, 6, 1073)},
+    {"To Inferno Area", Vector3.new(-6759, 6, -1285)},
+    {"To Legend Area", Vector3.new(4603, 990, -3898)},
+    {"To Muscle King Area", Vector3.new(-8626, 16, -5730)},
+    {"To Jungle Area", Vector3.new(-8642, 6, 2381)},
+    {"To Lava Brawl", Vector3.new(4471, 119, -8836)},
+    {"To Desert Brawl", Vector3.new(960, 17, -7398)},
+    {"To Beach Brawl", Vector3.new(-1849, 20, -6335)}
+}
+for _, btn in ipairs(teleportButtons) do
+    teleportTab:AddButton(btn[1], function() tpTo(btn[2]) end)
+end
 
--- KILL TAB (unchanged)
+-- KILL TAB
 local KillTab = window:AddTab("Kill")
 local KillFolder = KillTab:AddFolder("Auto Kill")
 
@@ -139,8 +157,10 @@ KillFolder:AddSwitch("Kill All Players (Aura)", function(state)
         task.spawn(function()
             while getgenv().killAura do
                 pcall(function()
-                    for _, plr in Players:GetPlayers() do
-                        if plr ~= LocalPlayer and plr.Character then killPlayer(plr) end
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= LocalPlayer and plr.Character then
+                            killPlayer(plr)
+                        end
                     end
                 end)
                 task.wait(0.08)
@@ -175,20 +195,26 @@ KillFolder:AddSwitch("Auto Kill Selected", function(state)
     end
 end)
 
+-- Update player list periodically
 task.spawn(function()
     while true do
         local list = {}
-        for _, plr in Players:GetPlayers() do
-            if plr ~= LocalPlayer then table.insert(list, plr.Name .. " | " .. plr.DisplayName) end
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer then
+                table.insert(list, plr.Name .. " | " .. plr.DisplayName)
+            end
         end
-        playerDropdown:SetValues(list)
+        pcall(function()
+            if playerDropdown then
+                playerDropdown:SetValues(list)
+            end
+        end)
         task.wait(5)
     end
 end)
 
--- ROCK FARM (unchanged)
+-- ROCK FARM
 RockFarmFolder:AddSection("Rock Farm Controls")
-
 local rockOptions = {
     {name = "Tiny Island Rock", dur = 0},
     {name = "Starter Island Rock", dur = 100},
@@ -200,8 +226,7 @@ local rockOptions = {
     {name = "Muscle King Gym Rock", dur = 5000000},
     {name = "Ancient Jungle Rock", dur = 10000000},
 }
-
-local selectedDur = nil
+local selectedDur
 local rockDropdown = RockFarmFolder:AddDropdown("Select Rock", {
     Title = "Select Rock to Farm",
     Values = {"None"},
@@ -216,7 +241,6 @@ local rockDropdown = RockFarmFolder:AddDropdown("Select Rock", {
         print("Selected rock durability: " .. (selectedDur or "None"))
     end
 })
-
 local rockValues = {"None"}
 for _, opt in ipairs(rockOptions) do table.insert(rockValues, opt.name) end
 rockDropdown:SetValues(rockValues)
@@ -272,7 +296,7 @@ RockFarmFolder:AddSwitch("Auto Farm Selected Rock", function(state)
     end
 end)
 
--- REBIRTH TAB (with elerium-v2 compatible rebirth target)
+-- REBIRTH TAB
 local rebirthTab = window:AddTab("rebirth")
 
 rebirthTab:AddSwitch("Auto Rebirth (Infinite)", function(state)
@@ -351,3 +375,6 @@ rebirthTab:AddSwitch("Hide All Frames", function(state)
     end)
     print("Hide Frames " .. (state and "ENABLED" or "DISABLED"))
 end)
+else
+    warn("Failed to load main library")
+end
