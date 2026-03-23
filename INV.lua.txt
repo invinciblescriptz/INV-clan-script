@@ -8,7 +8,6 @@ local window = library:AddWindow("INV Public || Made by invincible ||", {
 local informationTab = window:AddTab("Information")
 informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 24
 informationTab:AddLabel("Made by invincible").TextSize = 22
-informationTab:AddLabel("Im a dumbass dm 999krxzy on discord if you find any issues").TextSize = 18
 
 -- Services
 local Players = game:GetService("Players")
@@ -136,10 +135,7 @@ end
 
 -- Tabs
 local mainTab = window:AddTab("Main")
-local rebirthTab = window:AddTab("Rebirth")
 local teleportTab = window:AddTab("Teleport")
-local farmingTab = window:AddTab("Farming")
-local miscTab = window:AddTab("Misc")
 
 -- Tools Folder
 local toolsFolder = mainTab:AddFolder("Tools")
@@ -252,7 +248,7 @@ local rockFarmOptions = {
 for _, option in ipairs(rockFarmOptions) do
     local name, dur = option[1], option[2]
     rockFarmFolder:AddSwitch(name, function(s) setRockFarm(dur, s) end)
-end
+end)
 rockFarmFolder:AddButton("Stop All Rock Farming", function()
     getgenv().rockFarmActive = false
     getgenv().selectedRockDurability = 0
@@ -263,92 +259,54 @@ task.spawn(function()
     while getgenv().NexusRunning do
         if not getgenv().rockFarmActive or getgenv().selectedRockDurability <= 0 then
             task.wait(0.8)
-            continue
-        end
-        pcall(function()
-            local char = LocalPlayer.Character
-            if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
-                task.wait(1.4)
-                return
-            end
-            local dur = LocalPlayer:FindFirstChild("Durability")
-            if not dur or dur.Value < getgenv().selectedRockDurability then
-                task.wait(0.6)
-                return
-            end
-            safeEquipTool("Punch")
-            local machinesFolder = Workspace:FindFirstChild("machinesFolder")
-            if machinesFolder then
-                for _, obj in pairs(machinesFolder:GetDescendants()) do
-                    if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == getgenv().selectedRockDurability then
-                        local rock = obj.Parent:FindFirstChild("Rock")
-                        if rock and rock:IsA("BasePart") then
-                            local hrp = char:FindFirstChild("HumanoidRootPart")
-                            if hrp then
-                                if char:FindFirstChild("RightHand") then
-                                    firetouchinterest(rock, hrp, 0)
-                                    task.wait(0.03)
-                                    firetouchinterest(rock, hrp, 1)
-                                end
-                                if char:FindFirstChild("LeftHand") then
-                                    firetouchinterest(rock, hrp, 0)
-                                    task.wait(0.03)
-                                    firetouchinterest(rock, hrp, 1)
-                                end
-                                -- Punch
-                                if muscleEvent then
-                                    muscleEvent:FireServer("punch", "leftHand")
-                                    muscleEvent:FireServer("punch", "rightHand")
+        else
+            pcall(function()
+                local char = LocalPlayer.Character
+                if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
+                    task.wait(1.4)
+                    return
+                end
+                local dur = LocalPlayer:FindFirstChild("Durability")
+                if not dur or dur.Value < getgenv().selectedRockDurability then
+                    task.wait(0.6)
+                    return
+                end
+                safeEquipTool("Punch")
+                local machinesFolder = Workspace:FindFirstChild("machinesFolder")
+                if machinesFolder then
+                    for _, obj in pairs(machinesFolder:GetDescendants()) do
+                        if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == getgenv().selectedRockDurability then
+                            local rock = obj.Parent:FindFirstChild("Rock")
+                            if rock and rock:IsA("BasePart") then
+                                local hrp = char:FindFirstChild("HumanoidRootPart")
+                                if hrp then
+                                    if char:FindFirstChild("RightHand") then
+                                        firetouchinterest(rock, hrp, 0)
+                                        task.wait(0.03)
+                                        firetouchinterest(rock, hrp, 1)
+                                    end
+                                    if char:FindFirstChild("LeftHand") then
+                                        firetouchinterest(rock, hrp, 0)
+                                        task.wait(0.03)
+                                        firetouchinterest(rock, hrp, 1)
+                                    end
+                                    -- Punch
+                                    if muscleEvent then
+                                        muscleEvent:FireServer("punch", "leftHand")
+                                        muscleEvent:FireServer("punch", "rightHand")
+                                    end
                                 end
                             end
                         end
                     end
                 end
-            end
-        end)
-        task.wait(0.18)
-    end
-end)
-
--- Lock Position / Rebirth Control in Farming tab
-local lockEnabled = false
-
-local function stopLock()
-    if lockConn then lockConn:Disconnect() lockConn = nil end
-    local r = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if r then r.Anchored = false end
-end
-
-local function startLock()
-    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local currentPos = root.CFrame
-    root.Anchored = true
-    lockConn = RunService.Heartbeat:Connect(function()
-        local r = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if r then
-            r.CFrame = currentPos
+            end)
+            task.wait(0.18)
         end
-    end)
-end
-
-local function updatePosLock(state)
-    lockEnabled = state
-    if state then
-        startLock()
-    else
-        stopLock()
-    end
-end
-
-local lockButton = farmingTab:AddButton("Lock Position", function()
-    updatePosLock(not lockEnabled)
-    if lockEnabled then
-        lockButton:SetText("Unlock")
-    else
-        lockButton:SetText("Lock")
     end
 end)
+
+local killerTab = window:AddTab("Killer")
 
 local killAura = false
 local killAuraConnection = nil
@@ -371,10 +329,7 @@ killerTab:AddSwitch("Kill All Players (Aura)", function(state)
         end)
     else
         killAura = false
-        -- No need to disconnect spawn, just set flag
-        if killAuraConnection then
-            -- It will naturally end
-        end
+        -- Connection will stop naturally
     end
 end)
 
@@ -453,8 +408,9 @@ local timeDropdown = killerTab:AddDropdown("Change Time", function(selection)
     })
 end)
 timeDropdown:Add("Night")
-timeDropdown:Add("Day")
 timeDropdown:Add("Midnight")
+
+local rebirthTab = window:AddTab("Rebirth")
 
 -- Auto Rebirth
 local function autoRebirth()
@@ -649,11 +605,13 @@ rebirthTab:AddSwitch("Auto Spin Wheel", function(bool)
 end)
 
 rebirthTab:AddButton("Full Optimization", function()
+    -- Remove GUIs
     for _, GuiObject in pairs(LocalPlayer:WaitForChild("PlayerGui"):GetChildren()) do
         if GuiObject:IsA("ScreenGui") then
             GuiObject:Destroy()
         end
     end
+    -- Remove particles and lights
     for _, ObjectInstance in pairs(workspace:GetDescendants()) do
         if ObjectInstance:IsA("ParticleEmitter") or ObjectInstance:IsA("PointLight") then
             ObjectInstance:Destroy()
@@ -674,6 +632,7 @@ rebirthTab:AddButton("Full Optimization", function()
     DarkSkybox.SkyboxRt = "rbxassetid://0"
     DarkSkybox.SkyboxUp = "rbxassetid://0"
     DarkSkybox.Parent = Lighting
+    -- Adjust lighting
     Lighting.Brightness = 0
     Lighting.ClockTime = 0
     Lighting.OutdoorAmbient = Color3.new(0, 0, 0)
@@ -710,15 +669,54 @@ rebirthTab:AddButton("Anti Lag", function()
 end)
 
 rebirthTab:AddButton("Jungle Squat", function()
-    local CharacterModel = LocalPlayer.Character
-    if CharacterModel and CharacterModel:FindFirstChild("HumanoidRootPart") then
-        CharacterModel.HumanoidRootPart.CFrame = CFrame.new(-8371.4336, 6.7981, 2858.8853)
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(-8371.4336, 6.7981, 2858.8853)
     end
 end)
 
 rebirthTab:AddButton("Jungle lift", function()
-    local CharacterModel = LocalPlayer.Character
-    if CharacterModel and CharacterModel:FindFirstChild("HumanoidRootPart") then
-        CharacterModel.HumanoidRootPart.CFrame = CFrame.new(-8652.8672, 29.2667, 2089.2617)
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(-8652.8672, 29.2667, 2089.2617)
+    end
+end)
+
+local lockEnabled = false
+
+local function stopLock()
+    if lockConn then lockConn:Disconnect() lockConn = nil end
+    local r = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if r then r.Anchored = false end
+end
+
+local function startLock()
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local currentPos = root.CFrame
+    root.Anchored = true
+    lockConn = RunService.Heartbeat:Connect(function()
+        local r = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if r then
+            r.CFrame = currentPos
+        end
+    end)
+end
+
+local function updatePosLock(state)
+    lockEnabled = state
+    if state then
+        startLock()
+    else
+        stopLock()
+    end
+end
+
+local lockButton = rebirthTab:AddButton("Lock Position", function()
+    updatePosLock(not lockEnabled)
+    if lockEnabled then
+        lockButton:SetText("Unlock")
+    else
+        lockButton:SetText("Lock")
     end
 end)
