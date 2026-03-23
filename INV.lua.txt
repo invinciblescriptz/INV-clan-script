@@ -1,15 +1,14 @@
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library"))()
 local window = library:AddWindow("INV Public || Made by invincible ||", {
     main_color = Color3.fromRGB(0, 0, 0),
-    min_size   = Vector2.new(470, 470),
+    min_size = Vector2.new(470, 470),
     can_resize = false,
 })
 
 local informationTab = window:AddTab("Information")
 informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 24
 informationTab:AddLabel("Made by invincible").TextSize = 22
-informationTab:AddLabel("Im a dumbass dm 999krxzy on discord
-if you find any issues").TextSize = 18
+informationTab:AddLabel("Im a dumbass dm 999krxzy on discord if you find any issues").TextSize = 18
 
 -- Services
 local Players = game:GetService("Players")
@@ -219,7 +218,7 @@ local teleportButtons = {
     {"To Jungle Area", Vector3.new(-8642, 6, 2381)},
     {"To Lava Brawl", Vector3.new(4471, 119, -8836)},
     {"To Desert Brawl", Vector3.new(960, 17, -7398)},
-    {"To Beach Brawl", Vector3.new(-1849, 20, -6335)}
+    {"To Beach Brawl", Vector3.new(-1849, 20, -6335)},
 }
 for _, btn in ipairs(teleportButtons) do
     local name, pos = btn[1], btn[2]
@@ -248,7 +247,7 @@ local rockFarmOptions = {
     {"Farm Eternal Gym Rock (750k)", 750000},
     {"Farm Legend Gym Rock (1M)", 1000000},
     {"Farm Muscle King Gym Rock (5M)", 5000000},
-    {"Farm Ancient Jungle Rock (10M)", 10000000}
+    {"Farm Ancient Jungle Rock (10M)", 10000000},
 }
 for _, option in ipairs(rockFarmOptions) do
     local name, dur = option[1], option[2]
@@ -313,11 +312,13 @@ end)
 
 -- Lock Position / Rebirth Control in Farming tab
 local lockEnabled = false
+
 local function stopLock()
     if lockConn then lockConn:Disconnect() lockConn = nil end
     local r = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if r then r.Anchored = false end
 end
+
 local function startLock()
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return end
@@ -326,14 +327,18 @@ local function startLock()
     lockConn = RunService.Heartbeat:Connect(function()
         local r = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if r then
-            r.Anchored = true
             r.CFrame = currentPos
         end
     end)
 end
+
 local function updatePosLock(state)
     lockEnabled = state
-    if state then startLock() else stopLock() end
+    if state then
+        startLock()
+    else
+        stopLock()
+    end
 end
 
 local lockButton = farmingTab:AddButton("Lock Position", function()
@@ -345,12 +350,15 @@ local lockButton = farmingTab:AddButton("Lock Position", function()
     end
 end)
 
+local killAura = false
+local killAuraConnection = nil
+
 killerTab:AddSwitch("Kill All Players (Aura)", function(state)
     getgenv().killAura = state
     if state then
-        killAuraToggle = true
+        killAura = true
         killAuraConnection = task.spawn(function()
-            while killAuraToggle do
+            while killAura do
                 pcall(function()
                     for _, plr in pairs(Players:GetPlayers()) do
                         if plr ~= LocalPlayer and plr.Character then
@@ -362,9 +370,10 @@ killerTab:AddSwitch("Kill All Players (Aura)", function(state)
             end
         end)
     else
-        killAuraToggle = false
+        killAura = false
+        -- No need to disconnect spawn, just set flag
         if killAuraConnection then
-            -- This is a spawn; no need to cancel, just set flag
+            -- It will naturally end
         end
     end
 end)
@@ -507,16 +516,14 @@ local autoTeleportSwitch = rebirthTab:AddSwitch("Auto Teleport to Muscle King", 
         else
             stopAutoTeleport()
         end
-        -- update button text if needed
     end
 })
 
 rebirthTab:AddLabel("Pack Farming").TextSize = 24
 
--- Initialize the variable outside so it can be referenced elsewhere if needed
+-- Fast Rebirth (Pack Farm) toggle
 local fastRebirth = false
 
--- Add the switch to the Farming tab
 rebirthTab:AddSwitch('Fast Rebirth (Pack Farm)', function(p79)
     fastRebirth = p79
 
@@ -539,7 +546,7 @@ rebirthTab:AddSwitch('Fast Rebirth (Pack Farm)', function(p79)
                             local v90
                             v89, v90 = v87(v88, v89)
                             if v89 == nil then break end
-                            _ReplicatedStorage.rEvents.equipPetEvent:FireServer('unequipPet', v90)
+                            _ReplicatedStorage.rEvents.equipPetEvent:FireServer('equipPet', v90)
                         end
                     end
                 end
@@ -611,13 +618,15 @@ rebirthTab:AddSwitch('Fast Rebirth (Pack Farm)', function(p79)
                     _LocalPlayer.Character.HumanoidRootPart.CFrame = _JungleBarLift.interactSeat.CFrame * CFrame.new(0, 3, 0)
                     repeat
                         task.wait(0.1)
-                        v107()
+                        _VirtualInputManager:SendKeyEvent(true, 'E', false, game)
+                        task.wait(0.1)
+                        _VirtualInputManager:SendKeyEvent(false, 'E', false, game)
                     until _LocalPlayer.Character.Humanoid.Sit
                 end
 
                 local _Value2 = _LocalPlayer.leaderstats.Rebirths.Value
                 repeat
-                    _ReplicatedStorage.rEvents.rebirthRemote:InvokeServer('rebirthRequest')
+                    game:GetService("ReplicatedStorage").rEvents.rebirthRemote:InvokeServer('rebirthRequest')
                     task.wait(0.1)
                 until _Value2 < _LocalPlayer.leaderstats.Rebirths.Value
 
