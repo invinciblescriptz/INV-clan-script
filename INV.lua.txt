@@ -309,6 +309,7 @@ task.spawn(function()
     end
 end)
 
+-- Killer tab functions
 local killAura = false
 local killAuraConnection = nil
 
@@ -395,7 +396,7 @@ killerTab:AddButton("NaN Combo", function()
     game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer(unpack(args))
 end)
 
--- Change Time Dropdown
+-- Change Time dropdown
 local timeDropdown = killerTab:AddDropdown("Change Time", function(selection)
     local lighting = game:GetService("Lighting")
     if selection == "Night" then
@@ -414,7 +415,7 @@ end)
 timeDropdown:Add("Night")
 timeDropdown:Add("Midnight")
 
--- Rebirth Tab
+-- Rebirth tab functions
 local function autoRebirth()
     task.spawn(function()
         while true do
@@ -478,12 +479,10 @@ local autoTeleportSwitch = rebirthTab:AddSwitch("Auto Teleport to Muscle King", 
 
 rebirthTab:AddLabel("Pack Farming").TextSize = 24
 
--- Fast Rebirth (Pack Farm) toggle
+-- Fast Rebirth (Pack Farm)
 local fastRebirth = false
-
 rebirthTab:AddSwitch('Fast Rebirth (Pack Farm)', function(p79)
     fastRebirth = p79
-
     if p79 then
         spawn(function()
             local _ReplicatedStorage = game:GetService('ReplicatedStorage')
@@ -575,6 +574,7 @@ rebirthTab:AddSwitch('Fast Rebirth (Pack Farm)', function(p79)
                     _LocalPlayer.Character.HumanoidRootPart.CFrame = _JungleBarLift.interactSeat.CFrame * CFrame.new(0, 3, 0)
                     repeat
                         task.wait(0.1)
+                        local _VirtualInputManager = game:GetService('VirtualInputManager')
                         _VirtualInputManager:SendKeyEvent(true, 'E', false, game)
                         task.wait(0.1)
                         _VirtualInputManager:SendKeyEvent(false, 'E', false, game)
@@ -593,18 +593,23 @@ rebirthTab:AddSwitch('Fast Rebirth (Pack Farm)', function(p79)
     end
 end)
 
+-- Auto Spin Wheel
 rebirthTab:AddSwitch("Auto Spin Wheel", function(bool)
     _G.AutoSpinWheel = bool
     if bool then
         spawn(function()
             while _G.AutoSpinWheel do
-                game:GetService("ReplicatedStorage").rEvents.openFortuneWheelRemote:InvokeServer("openFortuneWheel", game:GetService("ReplicatedStorage").fortuneWheelChances["Fortune Wheel"])
+                game:GetService("ReplicatedStorage").rEvents.openFortuneWheelRemote:InvokeServer(
+                    "openFortuneWheel",
+                    game:GetService("ReplicatedStorage").fortuneWheelChances["Fortune Wheel"]
+                )
                 task.wait(1)
             end
         end)
     end
 end)
 
+-- Full Optimization Button
 rebirthTab:AddButton("Full Optimization", function()
     -- Remove GUIs
     for _, GuiObject in pairs(LocalPlayer:WaitForChild("PlayerGui"):GetChildren()) do
@@ -642,6 +647,7 @@ rebirthTab:AddButton("Full Optimization", function()
     Lighting.FogEnd = 100
 end)
 
+-- Anti Lag Button
 rebirthTab:AddButton("Anti Lag", function()
     for _, DescendantObject in pairs(workspace:GetDescendants()) do
         if DescendantObject:IsA("ParticleEmitter") then
@@ -669,6 +675,7 @@ rebirthTab:AddButton("Anti Lag", function()
     })
 end)
 
+-- Jungle Squat Button
 rebirthTab:AddButton("Jungle Squat", function()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
@@ -676,6 +683,7 @@ rebirthTab:AddButton("Jungle Squat", function()
     end
 end)
 
+-- Jungle lift Button
 rebirthTab:AddButton("Jungle lift", function()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
@@ -721,3 +729,6 @@ local lockButton = rebirthTab:AddButton("Lock Position", function()
         lockButton:SetText("Lock")
     end
 end)
+
+-- Finally, open the window
+window:Open()
