@@ -74,6 +74,11 @@ local main = window:AddTab("Main")
 local Tools = main:AddFolder("Tools")
 local RockFarmFolder = main:AddFolder("Rock Farm")
 
+-- Add a test button to the Rock Farm folder to verify visibility
+RockFarmFolder:AddButton("Test Button", function()
+    print("Test Button in Rock Farm folder clicked")
+end)
+
 -- Tools Switches
 Tools:AddSwitch("Auto Pushups", function(state)
     _G.AutoPushups = state
