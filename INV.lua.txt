@@ -17,7 +17,8 @@ local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
 local infoTab = window:AddTab("Information")
 infoTab:AddLabel("Invincible likes ninja turtles").TextSize = 24
 infoTab:AddLabel("Made by invincible").TextSize = 22
-infoTab:AddLabel("DM 999krxzy on discord if you find issues").TextSize = 20
+infoTab:AddLabel("DM 999krxzy on discord
+if you find issues").TextSize = 16
 
 -- Button to auto give gamepasses
 infoTab:AddButton("Auto Lift Gamepass (Free)", function()
