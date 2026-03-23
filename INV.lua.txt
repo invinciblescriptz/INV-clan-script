@@ -17,7 +17,8 @@ local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
 local informationTab = window:AddTab("Information")
 informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 24
 informationTab:AddLabel("Made by invincible").TextSize = 22
-informationTab:AddLabel("Im a dumbass dm 999krxzy on discord if you find any issues").TextSize = 20
+informationTab:AddLabel("Im a dumbass dm 999krxzy on discord
+if you find any issues").TextSize = 20
 
 -- Button to auto give gamepasses
 informationTab:AddButton("Auto Lift Gamepass (Free)", function()
@@ -166,7 +167,7 @@ end
 
 local killAuraEnabled = false
 
-KillFolder:AddSwitch("Kill All Players (Aura)", function(state)
+KillerTab:AddSwitch("Kill All Players (Aura)", function(state)
     getgenv().killAura = state
     if state then
         task.spawn(function()
@@ -186,34 +187,6 @@ KillFolder:AddSwitch("Kill All Players (Aura)", function(state)
     end
 end)
 
-local targetPlayer = nil
-local playerDropdown = KillFolder:AddDropdown("Select Target Player", {
-    Title = "Single Target Kill",
-    Values = {},
-    Callback = function(selected)
-        local name = selected:match("^([^|]+)") or selected
-        targetPlayer = name
-        print("Target set: " .. name)
-    end,
-})
-
-KillFolder:AddSwitch("Auto Kill Selected", function(state)
-    getgenv().autoSingleKill = state
-    if state and targetPlayer then
-        getgenv().autoKillFlag = true
-        task.spawn(function()
-            while getgenv().autoKillFlag do
-                pcall(function()
-                    local tgt = Players:FindFirstChild(targetPlayer)
-                    if tgt then killPlayer(tgt) end
-                end)
-                task.wait(0.08)
-            end
-        end)
-    else
-        getgenv().autoKillFlag = false
-    end
-end)
 
 -- Update player list periodically
 task.spawn(function()
@@ -286,41 +259,93 @@ end
 local autoRockFarm = false
 local autoFarmConnection = nil
 
-RockFarmFolder:AddSwitch("Auto Farm Selected Rock", function(state)
-    getgenv().autoRockFarm = state
-    if state and selectedDur then
-        autoFarmConnection = task.spawn(function()
-            while getgenv().autoRockFarm do
-                pcall(function()
-                    local durVal = LocalPlayer:FindFirstChild("Durability")
-                    if durVal and durVal.Value >= selectedDur then
-                        for _, desc in pairs(workspace:FindFirstChild("machinesFolder") and workspace.machinesFolder:GetDescendants() or {}) do
-                            if desc.Name == "neededDurability" and desc.Value == selectedDur then
-                                local rock = desc.Parent:FindFirstChild("Rock")
-                                if rock then
-                                    local char = LocalPlayer.Character
-                                    if char and char:FindFirstChild("RightHand") and char:FindFirstChild("LeftHand") then
-                                        firetouchinterest(rock, char.RightHand, 0)
-                                        firetouchinterest(rock, char.RightHand, 1)
-                                        firetouchinterest(rock, char.LeftHand, 0)
-                                        firetouchinterest(rock, char.LeftHand, 1)
-                                        equipPunch()
-                                    end
+-- Rock Farm Controls
+local function setRockFarm(durability, enable)
+    if enable then
+        getgenv().selectedRockDurability = durability
+        getgenv().rockFarmActive = true
+    else
+        if getgenv().selectedRockDurability == durability then
+            getgenv().rockFarmActive = false
+            getgenv().selectedRockDurability = 0
+        end
+    end
+end
+
+local rockFarmOptions = {
+    {"Farm Tiny Island Rock (0)", 0},
+    {"Farm Starter Island Rock (100)", 100},
+    {"Farm Legend Beach Rock (5000)", 5000},
+    {"Farm Frost Gym Rock (150k)", 150000},
+    {"Farm Mythical Gym Rock (400k)", 400000},
+    {"Farm Eternal Gym Rock (750k)", 750000},
+    {"Farm Legend Gym Rock (1M)", 1000000},
+    {"Farm Muscle King Gym Rock (5M)", 5000000},
+    {"Farm Ancient Jungle Rock (10M)", 10000000}
+}
+for _, option in ipairs(rockFarmOptions) do
+    local name, dur = option[1], option[2]
+    rockFarmFolder:AddSwitch(name, function(s) setRockFarm(dur, s) end)
+end
+rockFarmFolder:AddButton("Stop All Rock Farming", function()
+    getgenv().rockFarmActive = false
+    getgenv().selectedRockDurability = 0
+end)
+
+-- Rock Farming Loop
+task.spawn(function()
+    while getgenv().NexusRunning do
+        if not getgenv().rockFarmActive or getgenv().selectedRockDurability <= 0 then
+            task.wait(0.8)
+            continue
+        end
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
+                task.wait(1.4)
+                return
+            end
+            local dur = LocalPlayer:FindFirstChild("Durability")
+            if not dur or dur.Value < getgenv().selectedRockDurability then
+                task.wait(0.6)
+                return
+            end
+            safeEquipTool("Punch")
+            local machinesFolder = Workspace:FindFirstChild("machinesFolder")
+            if machinesFolder then
+                for _, obj in pairs(machinesFolder:GetDescendants()) do
+                    if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == getgenv().selectedRockDurability then
+                        local rock = obj.Parent:FindFirstChild("Rock")
+                        if rock and rock:IsA("BasePart") then
+                            local hrp = char:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                if char:FindFirstChild("RightHand") then
+                                    firetouchinterest(rock, hrp, 0)
+                                    task.wait(0.03)
+                                    firetouchinterest(rock, hrp, 1)
+                                end
+                                if char:FindFirstChild("LeftHand") then
+                                    firetouchinterest(rock, hrp, 0)
+                                    task.wait(0.03)
+                                    firetouchinterest(rock, hrp, 1)
+                                end
+                                -- Punch
+                                if muscleEvent then
+                                    muscleEvent:FireServer("punch", "leftHand")
+                                    muscleEvent:FireServer("punch", "rightHand")
                                 end
                             end
                         end
                     end
-                end)
-                task.wait(0.15)
+                end
             end
         end)
-        print("Rock farm started for durability >= " .. selectedDur)
-    else
-        print("Rock farm stopped or no rock selected")
+        task.wait(0.18)
     end
 end)
 
 -- REBIRTH
+
 local rebirthTab = window:AddTab("rebirth")
 
 rebirthTab:AddSwitch("Auto Rebirth (Infinite)", function(state)
