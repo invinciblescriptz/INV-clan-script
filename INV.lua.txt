@@ -22,7 +22,6 @@ local tabInfo     = window:AddTab("Information")
 local tabMain     = window:AddTab("Main")
 local tabTeleport = window:AddTab("Teleport")
 local tabRebirth  = window:AddTab("Rebirth")
-local tabKiller   = window:AddTab("Killer")
 
 -- Information
 tabInfo:AddLabel("Invincible likes ninja turtles").TextSize = 24
@@ -492,7 +491,7 @@ game:BindToClose(function()
 end)
 
 -- Killer Tab
-local Killer = window:AddTab("Kill")
+local killerTab = window:AddTab("Killer")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local playerWhitelist = {}
@@ -507,12 +506,12 @@ local autoPunchNoAnim = false
 local targetDropdownItems = {}
 local availableTargets = {}
 
-local titleLabel = Killer:AddLabel("Select damage or durability pet")
+local titleLabel = killerTab:AddLabel("Select damage or durability pet")
 titleLabel.TextSize = 18
 titleLabel.Font = Enum.Font.Merriweather
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-local dropdown = Killer:AddDropdown("Select Pet", function(text)
+local dropdown = killerTab:AddDropdown("Select Pet", function(text)
     local petsFolder = game.Players.LocalPlayer.petsFolder
     for _, folder in pairs(petsFolder:GetChildren()) do
         if folder:IsA("Folder") then
@@ -543,7 +542,7 @@ local Wild_Wizard = dropdown:Add("Wild Wizard")
 local Powerful_Monster = dropdown:Add("Mighty Monster")
 
 -- Auto Good Karma
-Killer:AddSwitch("Auto Good Karma", function(bool)
+killerTab:AddSwitch("Auto Good Karma", function(bool)
     autoGoodKarma = bool
     task.spawn(function()
         while autoGoodKarma do
@@ -575,7 +574,7 @@ Killer:AddSwitch("Auto Good Karma", function(bool)
 end)
 
 -- Auto Bad Karma
-Killer:AddSwitch("Auto Bad Karma", function(bool)
+killerTab:AddSwitch("Auto Bad Karma", function(bool)
     autoBadKarma = bool
     task.spawn(function()
         while autoBadKarma do
@@ -631,11 +630,11 @@ local function updateWhitelist(state)
     end
 end
 
-Killer:AddSwitch("Auto Whitelist Friends", function(state)
+killerTab:AddSwitch("Auto Whitelist Friends", function(state)
     updateWhitelist(state)
 end)
 
-Killer:AddTextBox("Whitelist", function(text)
+killerTab:AddTextBox("Whitelist", function(text)
     local target = Players:FindFirstChild(text)
     if target then
         playerWhitelist[target.Name] = true
@@ -681,7 +680,7 @@ local function autoKillLoop()
     end)
 end
 
-Killer:AddSwitch("Auto Kill", function(bool)
+killerTab:AddSwitch("Auto Kill", function(bool)
     autoKill = bool
     if bool then
         autoKillLoop()
@@ -692,7 +691,7 @@ end)
 local targetPlayerNames = {}
 local selectedTarget = nil
 
-local targetDropdown = Killer:AddDropdown("Select Target", function(displayName)
+local targetDropdown = killerTab:AddDropdown("Select Target", function(displayName)
     for _, player in ipairs(Players:GetPlayers()) do
         if player.DisplayName == displayName then
             if not table.find(targetPlayerNames, player.Name) then
@@ -770,7 +769,7 @@ local function killLoop()
     end)
 end
 
-Killer:AddSwitch("Start Kill Target", function(state)
+killerTab:AddSwitch("Start Kill Target", function(state)
     killTarget = state
     if state then
         killLoop()
@@ -828,7 +827,7 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-Killer:AddSwitch("View Player", function(bool)
+killerTab:AddSwitch("View Player", function(bool)
     spying = bool
     if not spying then
         local cam = workspace.CurrentCamera
@@ -985,11 +984,11 @@ function RecoveryPunch()
     if _G.CharacterAddedConnection then _G.CharacterAddedConnection:Disconnect(); _G.CharacterAddedConnection = nil end
 end
 
-Killer:AddButton("Recover Punch Anim", function()
+killerTab:AddButton("Recover Punch Anim", function()
     RecoveryPunch()
 end)
 
-Killer:AddSwitch("Auto Equip Punch", function(state)
+killerTab:AddSwitch("Auto Equip Punch", function(state)
     autoEquipPunch = state
     task.spawn(function()
         while autoEquipPunch do
@@ -1002,7 +1001,7 @@ Killer:AddSwitch("Auto Equip Punch", function(state)
     end)
 end)
 
-Killer:AddSwitch("Auto Punch [without animation ]", function(state)
+killerTab:AddSwitch("Auto Punch [without animation ]", function(state)
     autoPunchNoAnim = state
     task.spawn(function()
         while autoPunchNoAnim do
@@ -1020,8 +1019,7 @@ Killer:AddSwitch("Auto Punch [without animation ]", function(state)
         end
     end)
 end)
-
-Killer:AddSwitch("Auto Punch", function(state)
+killerTab:AddSwitch("Auto Punch", function(state)
     _G.fastHitActive = state
     if state then
         task.spawn(function()
@@ -1053,7 +1051,7 @@ Killer:AddSwitch("Auto Punch", function(state)
     end
 end)
 
-Killer:AddSwitch("Fast punch", function(state)
+killerTab:AddSwitch("Fast punch", function(state)
     _G.autoPunchActive = state
     if state then
         task.spawn(function()
@@ -1086,7 +1084,7 @@ Killer:AddSwitch("Fast punch", function(state)
 end)
 
 local godModeToggle = false
-Killer:AddSwitch("Good mode", function(State)
+killerTab:AddSwitch("Good mode", function(State)
     godModeToggle = State
     if State then
         task.spawn(function()
@@ -1139,7 +1137,7 @@ local function updateFollowTarget(selectedDisplayName)
     end
 end
 
-local followDropdown = Killer:AddDropdown("Teleport player", function(selectedDisplayName)
+local followDropdown = killerTab:AddDropdown("Teleport player", function(selectedDisplayName)
     updateFollowTarget(selectedDisplayName)
     if followTarget then
         print("🚶‍♂️ Started following:", followTarget)
@@ -1181,7 +1179,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 -- Button to stop following
-Killer:AddButton("Dejar de Seguir", function()
+killerTab:AddButton("unfollow", function()
     following = false
     followTarget = nil
     print("🚫 Stopped following")
@@ -1206,7 +1204,7 @@ local function autoSlam()
     end
 end
 
-Killer:AddSwitch("auto slams", function(state)
+killerTab:AddSwitch("auto slams", function(state)
     if state then
         task.spawn(function()
             while state do
@@ -1217,7 +1215,7 @@ Killer:AddSwitch("auto slams", function(state)
     end
 end)
 
-Killer:AddButton("Combo NaN", function()
+killerTab:AddButton("Combo NaN", function()
     local args = {"changeSize", 0/0}
     game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer(unpack(args))
 end)
@@ -1278,7 +1276,7 @@ local function setLighting(selection)
     end
 end
 
-local timeDropdown = Killer:AddDropdown("change time", function(selection)
+local timeDropdown = killerTab:AddDropdown("change time", function(selection)
     setLighting(selection)
 end)
 
