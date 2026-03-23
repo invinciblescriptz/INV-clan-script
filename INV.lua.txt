@@ -13,11 +13,13 @@ local UserInputService = game:GetService("UserInputService")
 
 local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
 
+-- Info Tab
 local informationTab = window:AddTab("Information")
 informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 18
 informationTab:AddLabel("Made by invincible").TextSize = 9
 informationTab:AddLabel("Im a dumbass dm 999krxzy on discord if you find any issues").TextSize = 5
 
+-- Button to auto give gamepasses
 informationTab:AddButton("Auto Lift Gamepass (Free)", function()
     pcall(function()
         local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
@@ -36,7 +38,7 @@ informationTab:AddButton("Auto Lift Gamepass (Free)", function()
     end)
 end)
 
--- AUTO REP Function
+-- AUTO RELOAD TOOL FUNCTION
 local function startAutoRep(toolName, toggleVar)
     task.spawn(function()
         while _G[toggleVar] do
@@ -56,7 +58,7 @@ local function startAutoRep(toolName, toggleVar)
             end)
             task.wait(0.025)
         end
-        -- unequip tool when toggled off
+        -- Unequip tool when toggled off
         pcall(function()
             local char = LocalPlayer.Character
             if char then
@@ -67,11 +69,13 @@ local function startAutoRep(toolName, toggleVar)
     end)
 end
 
+-- Main Tabs
 local main = window:AddTab("Main")
 local Tools = main:AddFolder("Tools")
 local RockFarmFolder = main:AddFolder("Rock Farm")
-local BetterFarmingTab = window:AddTab("better farming")
+local betterFarmingTab = window:AddTab("better farming")
 
+-- Tools Switches
 Tools:AddSwitch("Auto Pushups", function(state)
     _G.AutoPushups = state
     if state then startAutoRep("Pushups", "AutoPushups") end
@@ -98,9 +102,7 @@ Tools:AddSwitch("Fast Punch", function(state)
                         muscleEvent:FireServer("punch", "leftHand")
                     end
                     local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("Punch") then
-                        char.Punch:Activate()
-                    end
+                    if char and char:FindFirstChild("Punch") then char.Punch:Activate() end
                 end)
                 task.wait(0.07)
             end
@@ -163,15 +165,13 @@ local function killPlayer(target)
     end
 end
 
-local killAuraToggle = false
-local killAuraConnection
+local killAuraEnabled = false
 
 KillFolder:AddSwitch("Kill All Players (Aura)", function(state)
     getgenv().killAura = state
     if state then
-        killAuraToggle = true
-        killAuraConnection = task.spawn(function()
-            while killAuraToggle do
+        task.spawn(function()
+            while getgenv().killAura do
                 pcall(function()
                     for _, plr in pairs(Players:GetPlayers()) do
                         if plr ~= LocalPlayer and plr.Character then
@@ -183,35 +183,30 @@ KillFolder:AddSwitch("Kill All Players (Aura)", function(state)
             end
         end)
     else
-        killAuraToggle = false
-        if killAuraConnection then
-            -- This is a spawn; no need to cancel, just set flag
-        end
+        getgenv().killAura = false
     end
 end)
 
-local targetKillPlayer = nil
+local targetPlayer = nil
 local playerDropdown = KillFolder:AddDropdown("Select Target Player", {
     Title = "Single Target Kill",
     Values = {},
     Callback = function(selected)
         local name = selected:match("^([^|]+)") or selected
-        targetKillPlayer = name
+        targetPlayer = name
         print("Target set: " .. name)
     end,
 })
 
 KillFolder:AddSwitch("Auto Kill Selected", function(state)
     getgenv().autoSingleKill = state
-    if state and targetKillPlayer then
+    if state and targetPlayer then
         getgenv().autoKillFlag = true
         task.spawn(function()
             while getgenv().autoKillFlag do
                 pcall(function()
-                    local tgt = Players:FindFirstChild(targetKillPlayer)
-                    if tgt then
-                        killPlayer(tgt)
-                    end
+                    local tgt = Players:FindFirstChild(targetPlayer)
+                    if tgt then killPlayer(tgt) end
                 end)
                 task.wait(0.08)
             end
@@ -221,7 +216,7 @@ KillFolder:AddSwitch("Auto Kill Selected", function(state)
     end
 end)
 
--- Update player list every 5 seconds
+-- Update player list periodically
 task.spawn(function()
     while true do
         local list = {}
@@ -253,7 +248,13 @@ local rockOptions = {
 local selectedDur = nil
 local rockDropdown = RockFarmFolder:AddDropdown("Select Rock", {
     Title = "Select Rock to Farm",
-    Values = {"None"},
+    Values = (function()
+        local vals = {"None"}
+        for _, opt in ipairs(rockOptions) do
+            table.insert(vals, opt.name)
+        end
+        return vals
+    end)(),
     Callback = function(selected)
         selectedDur = nil
         for _, opt in ipairs(rockOptions) do
@@ -265,10 +266,6 @@ local rockDropdown = RockFarmFolder:AddDropdown("Select Rock", {
         print("Selected rock durability: " .. (selectedDur or "None"))
     end,
 })
-
-local rockValues = {"None"}
-for _, opt in ipairs(rockOptions) do table.insert(rockValues, opt.name) end
-rockDropdown:SetValues(rockValues)
 
 local function equipPunch()
     pcall(function()
@@ -287,8 +284,8 @@ local function equipPunch()
     end)
 end
 
-local autoFarmRock = false
-local autoFarmConnection
+local autoRockFarm = false
+local autoFarmConnection = nil
 
 RockFarmFolder:AddSwitch("Auto Farm Selected Rock", function(state)
     getgenv().autoRockFarm = state
@@ -349,10 +346,6 @@ rebirthTab:AddSwitch("Auto Rebirth (Infinite)", function(state)
         print("Auto Rebirth ENABLED")
     else
         getgenv().autoRebirth = false
-        if getgenv().autoRebirthLoop then
-            -- No direct cancel, just setting flag
-        end
-        print("Auto Rebirth DISABLED")
     end
 end)
 
@@ -373,9 +366,7 @@ rebirthTab:AddSwitch("Auto Size 2", function(state)
         end)
         print("Auto Size 2 ENABLED")
     else
-        if getgenv().autoSizeLoop then
-            -- No direct cancel; loop will stop on next toggle
-        end
+        -- No explicit cancel, loop will stop on toggle
         print("Auto Size 2 DISABLED")
     end
 end)
@@ -386,18 +377,14 @@ rebirthTab:AddSwitch("Auto Teleport to Muscle King", function(state)
             while true do
                 pcall(function()
                     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.CFrame = CFrame.new(-8646, 17, -5738)
-                    end
+                    if hrp then hrp.CFrame = CFrame.new(-8646, 17, -5738) end
                 end)
                 task.wait(0.05)
             end
         end)
         print("Auto TP to King ENABLED")
     else
-        if getgenv().kingTeleportLoop then
-            -- No direct cancel, loop ends on toggle
-        end
+        -- No explicit cancel
         print("Auto TP to King DISABLED")
     end
 end)
@@ -405,118 +392,11 @@ end)
 rebirthTab:AddSwitch("Hide All Frames", function(state)
     pcall(function()
         for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-            if obj:IsA("Frame") or obj.Name:match("Frame$") then
-                obj.Visible = not state
-            end
+            if obj:IsA("Frame") or obj.Name:match("Frame$") then obj.Visible = not state end
         end
         for _, obj in pairs(LocalPlayer.PlayerGui:GetDescendants()) do
-            if obj:IsA("Frame") then
-                obj.Visible = not state
-            end
+            if obj:IsA("Frame") then obj.Visible = not state end
         end
     end)
     print("Hide All Frames " .. (state and "ENABLED" or "DISABLED"))
-end)
-
--- Add the Rock Farm section to the folder
-local RockFarmFolder = main:AddFolder("Rock Farm")
-RockFarmFolder:AddSection("Rock Farm Controls")
-
--- Define the rock options
-local rockOptions = {
-    {name = "Tiny Island Rock", dur = 0},
-    {name = "Starter Island Rock", dur = 100},
-    {name = "Legend Beach Rock", dur = 5000},
-    {name = "Frost Gym Rock", dur = 150000},
-    {name = "Mythical Gym Rock", dur = 400000},
-    {name = "Eternal Gym Rock", dur = 750000},
-    {name = "Legend Gym Rock", dur = 1000000},
-    {name = "Muscle King Gym Rock", dur = 5000000},
-    {name = "Ancient Jungle Rock", dur = 10000000},
-}
-
-local selectedDur = nil
-
--- Dropdown for selecting rock
-local rockDropdown = RockFarmFolder:AddDropdown("Select Rock", {
-    Title = "Select Rock to Farm",
-    Values = (function()
-        local vals = {"None"}
-        for _, opt in ipairs(rockOptions) do
-            table.insert(vals, opt.name)
-        end
-        return vals
-    end)(),
-    Callback = function(selected)
-        selectedDur = nil
-        for _, opt in ipairs(rockOptions) do
-            if opt.name == selected then
-                selectedDur = opt.dur
-                break
-            end
-        end
-        print("Selected rock durability: " .. (selectedDur or "None"))
-    end,
-})
-
--- Function to equip Punch tool
-local function equipPunch()
-    pcall(function()
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-                if tool.Name == "Punch" then
-                    char.Humanoid:EquipTool(tool)
-                end
-            end
-            if muscleEvent then
-                muscleEvent:FireServer("punch", "leftHand")
-                muscleEvent:FireServer("punch", "rightHand")
-            end
-        end
-    end)
-end
-
--- Variable to control auto farming
-local autoFarmRock = false
-local autoFarmConnection = nil
-
--- Toggle for auto farming
-RockFarmFolder:AddSwitch("Auto Farm Selected Rock", function(state)
-    getgenv().autoRockFarm = state
-    if state and selectedDur then
-        -- Start auto farming loop
-        autoFarmConnection = task.spawn(function()
-            while getgenv().autoRockFarm do
-                pcall(function()
-                    local durVal = LocalPlayer:FindFirstChild("Durability")
-                    if durVal and durVal.Value >= selectedDur then
-                        for _, desc in pairs(workspace:FindFirstChild("machinesFolder") and workspace.machinesFolder:GetDescendants() or {}) do
-                            if desc.Name == "neededDurability" and desc.Value == selectedDur then
-                                local rock = desc.Parent:FindFirstChild("Rock")
-                                if rock then
-                                    local char = LocalPlayer.Character
-                                    if char and char:FindFirstChild("RightHand") and char:FindFirstChild("LeftHand") then
-                                        -- Touch the rock with both hands
-                                        firetouchinterest(rock, char.RightHand, 0)
-                                        firetouchinterest(rock, char.RightHand, 1)
-                                        firetouchinterest(rock, char.LeftHand, 0)
-                                        firetouchinterest(rock, char.LeftHand, 1)
-                                        -- Equip punch for faster farming
-                                        equipPunch()
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end)
-                task.wait(0.15)
-            end
-        end)
-        print("Rock farm started for durability >= " .. selectedDur)
-    else
-        -- Stop auto farm
-        getgenv().autoRockFarm = false
-        print("Rock farm stopped or no rock selected")
-    end
 end)
