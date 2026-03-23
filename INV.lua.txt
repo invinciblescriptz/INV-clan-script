@@ -13,7 +13,7 @@ end
 -- Window
 local window = library:AddWindow("INV Public || Made by invincible ||", {
     main_color = Color3.fromRGB(0, 0, 0),
-    min_size   = Vector2.new(480, 480),
+    min_size   = Vector2.new(660, 780),
     can_resize = false,
 })
 
@@ -151,28 +151,27 @@ local function toggleAntiAFK(en)
     end
 end
 
--- Kill player (under-feet method)
-local function killPlr(plr)
-    pcall(function()
-        local myHRP = getHRP()
-        local tHRP = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-        if myHRP and tHRP then
-            myHRP.CFrame = tHRP.CFrame * CFrame.new(0, -25, 0)
-        end
-    end)
-end
-
--- Kill Aura loop
-task.spawn(function()
-    while getgenv().NexusRunning do
-        if states.KillAura then
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= LP and plr.Character then
-                    killPlr(plr)
-                end
+killerTab:AddSwitch("Kill All Players (Aura)", function(state)
+    getgenv().killAura = state
+    if state then
+        killAuraToggle = true
+        killAuraConnection = task.spawn(function()
+            while killAuraToggle do
+                pcall(function()
+                    for _, plr in pairs(Players:GetPlayers()) do
+                        if plr ~= LocalPlayer and plr.Character then
+                            killPlayer(plr)
+                        end
+                    end
+                end)
+                task.wait(0.08)
             end
+        end)
+    else
+        killAuraToggle = false
+        if killAuraConnection then
+            -- This is a spawn; no need to cancel, just set flag
         end
-        task.wait(0.12)
     end
 end)
 
@@ -271,7 +270,7 @@ fTools:AddSwitch("Infinite Jump",   function(v) toggleInfJump(v) end)
 fTools:AddSwitch("Anti-AFK",        function(v) toggleAntiAFK(v) end)
 
 -- Fake gamepass unlock (client-side only)
-tabMain:AddButton("Unlock Auto-Lift Gamepass (client)", function()
+informationTab:AddButton("Unlock Auto-Lift Gamepass)", function()
     pcall(function()
         local ids = RS:FindFirstChild("gamepassIds")
         if not ids then return end
@@ -285,7 +284,6 @@ tabMain:AddButton("Unlock Auto-Lift Gamepass (client)", function()
             end
         end
     end)
-end)
 
 -- Teleports
 local tpLocs = {
@@ -346,22 +344,31 @@ tabKiller:AddSwitch("Auto Ground Slam",  function(v) states.AutoSlam  = v end)
 -- Removed NaN size exploit – patched/detectable in 2026
 
 -- Rebirth Tab
-tabRebirth:AddSwitch("Auto Spin Wheel", function(v)
-    getgenv().AutoSpinWheel = v
-    if v then
-        task.spawn(function()
-            while getgenv().AutoSpinWheel do
-                pcall(function()
-                    RS.rEvents.openFortuneWheelRemote:InvokeServer(
-                        "openFortuneWheel",
-                        RS.fortuneWheelChances["Fortune Wheel"]
-                    )
-                end)
-                task.wait(1.3)
-            end
-        end)
+
+local autoRebirthToggle = rebirthTab:AddSwitch("Auto Rebirth (Infinite)", {
+    Default = false,
+    Callback = function(val)
+        if val then
+            autoRebirth()
+        end
     end
-end)
+})
+
+-- Auto Size 1
+local autoSizeSwitch = rebirthTab:AddSwitch("Auto Size 1", {
+    Default = false,
+    Callback = function(val)
+        _G.autoSizeActive = val
+        if val then
+            task.spawn(function()
+                while _G.autoSizeActive do
+                    game:GetService("ReplicatedStorage").rEvents.changeSpeedSizeRemote:InvokeServer("changeSize", 1)
+                    task.wait(0.2)
+                end
+            end)
+        end
+    end
+})
 
 tabRebirth:AddSwitch("Auto TP → Muscle King", function(v)
     getgenv().AutoTPMuscleKing = v
@@ -375,7 +382,7 @@ tabRebirth:AddSwitch("Auto TP → Muscle King", function(v)
     end
 end)
 
-tabRebirth:AddLabel("Pack Farming ").TextSize = 22
+tabRebirth:AddLabel("Pack Farming (very game-specific)").TextSize = 22
 
 tabRebirth:AddSwitch("Fast Rebirth Pack Farm", function(v)
     getgenv().FastPackFarm = v
@@ -440,7 +447,7 @@ tabRebirth:AddSwitch("Fast Rebirth Pack Farm", function(v)
 end)
 
 -- Optimization
-tabRebirth:AddButton("Full Visual Cleanup", function()
+tabRebirth:AddButton("Full optimization", function()
     pcall(function()
         for _, g in ipairs(LP.PlayerGui:GetChildren()) do if g:IsA("ScreenGui") then g:Destroy() end end
         for _, o in ipairs(WS:GetDescendants()) do
