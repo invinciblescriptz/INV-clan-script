@@ -1,15 +1,26 @@
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library"))()
+-- Load the external library with error handling
+local success, library = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library"))()
+end)
+
+if not success or not library then
+    warn("Failed to load UI Library")
+    return
+end
+
+-- Create the main window
 local window = library:AddWindow("INV Public || Made by invincible ||", {
     main_color = Color3.fromRGB(0, 0, 0),
     min_size = Vector2.new(470, 470),
     can_resize = false,
 })
 
+-- Add an Information tab
 local informationTab = window:AddTab("Information")
 informationTab:AddLabel("Invincible likes ninja turtles").TextSize = 24
 informationTab:AddLabel("Made by invincible").TextSize = 22
 
--- Services
+-- Wait for necessary services
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
@@ -22,7 +33,7 @@ local Lighting = game:GetService("Lighting")
 local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 8)
 getgenv().NexusRunning = true
 
--- Globals & states
+-- Globals and states
 local states = {
     AutoPushups = false,
     AutoWeight = false,
@@ -133,13 +144,13 @@ local function killPlayer(targetPlayer)
     end)
 end
 
--- Tabs
+-- Create main tabs
 local mainTab = window:AddTab("Main")
 local teleportTab = window:AddTab("Teleport")
 local rebirthTab = window:AddTab("Rebirth")
 local killerTab = window:AddTab("Killer")
 
--- Tools Folder
+-- Tools folder
 local toolsFolder = mainTab:AddFolder("Tools")
 local rockFarmFolder = mainTab:AddFolder("Rock Farm")
 
@@ -185,7 +196,7 @@ toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
     end
 end)
 
--- Auto Lift Gamepass
+-- Auto Lift Gamepass button
 informationTab:AddButton("Auto Lift Gamepass (Free)", function()
     pcall(function()
         local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
@@ -204,7 +215,7 @@ informationTab:AddButton("Auto Lift Gamepass (Free)", function()
     end)
 end)
 
--- Teleport Buttons
+-- Teleport buttons
 local teleportButtons = {
     {"To Spawn / Safe Area", Vector3.new(-6, 5, -196)},
     {"To Secret Area", Vector3.new(1947, 2, 6191)},
@@ -224,7 +235,7 @@ for _, btn in ipairs(teleportButtons) do
     teleportTab:AddButton(name, function() tpTo(pos) end)
 end
 
--- Rock Farm Controls
+-- Rock Farm controls
 local function setRockFarm(durability, enable)
     if enable then
         getgenv().selectedRockDurability = durability
