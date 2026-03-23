@@ -152,26 +152,41 @@ local function toggleAntiAFK(en)
     end
 end
 
+-- Declare the toggle and connection variables outside the function for proper scope
+local killAura = false
+local killAuraToggle = false
+local killAuraConnection = nil
+
 tabKiller:AddSwitch("Kill All Players (Aura)", function(state)
-    getgenv().killAura = state
-    if state then
+    killAura = state
+    if killAura then
+        -- Start the kill aura loop
         killAuraToggle = true
         killAuraConnection = task.spawn(function()
             while killAuraToggle do
                 pcall(function()
                     for _, plr in pairs(Players:GetPlayers()) do
-                        if plr ~= LocalPlayer and plr.Character then
-                            killPlayer(plr)
+                        if plr ~= LP and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                            -- Prevent attacking yourself
+                            if plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
+                                -- Call your existing killPlayer function here
+                                -- Assuming you have a function like:
+                                -- killPlayer(plr)
+                                -- Or implement logic to damage or eliminate the player
+                                killPlayer(plr)
+                            end
                         end
                     end
                 end)
-                task.wait(0.08)
+                task.wait(0.08) -- Adjust the wait time as needed
             end
         end)
     else
+        -- Stop the loop
         killAuraToggle = false
         if killAuraConnection then
-            -- This is a spawn; no need to cancel, just set flag
+            -- No need to explicitly disconnect if using task.spawn with a loop, but setting toggle to false stops it
+            killAuraConnection = nil
         end
     end
 end)
