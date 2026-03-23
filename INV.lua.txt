@@ -136,6 +136,8 @@ end
 -- Tabs
 local mainTab = window:AddTab("Main")
 local teleportTab = window:AddTab("Teleport")
+local rebirthTab = window:AddTab("Rebirth")
+local killerTab = window:AddTab("Killer")
 
 -- Tools Folder
 local toolsFolder = mainTab:AddFolder("Tools")
@@ -183,6 +185,7 @@ toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
     end
 end)
 
+-- Auto Lift Gamepass
 informationTab:AddButton("Auto Lift Gamepass (Free)", function()
     pcall(function()
         local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
@@ -306,13 +309,12 @@ task.spawn(function()
     end
 end)
 
-local killerTab = window:AddTab("Killer")
-
 local killAura = false
 local killAuraConnection = nil
 
+-- Kill All Players (Aura)
 killerTab:AddSwitch("Kill All Players (Aura)", function(state)
-    getgenv().killAura = state
+    getgenv().KillAura = state
     if state then
         killAura = true
         killAuraConnection = task.spawn(function()
@@ -329,10 +331,10 @@ killerTab:AddSwitch("Kill All Players (Aura)", function(state)
         end)
     else
         killAura = false
-        -- Connection will stop naturally
     end
 end)
 
+-- Auto Punch (Fast)
 killerTab:AddSwitch("Auto Punch (Fast)", function(s)
     states.FastPunch = s
     if s then
@@ -387,11 +389,13 @@ killerTab:AddSwitch("auto slams", function(state)
     end
 end)
 
+-- NaN Combo button
 killerTab:AddButton("NaN Combo", function()
     local args = {"changeSize", 0/0}
     game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer(unpack(args))
 end)
 
+-- Change Time Dropdown
 local timeDropdown = killerTab:AddDropdown("Change Time", function(selection)
     local lighting = game:GetService("Lighting")
     if selection == "Night" then
@@ -410,9 +414,7 @@ end)
 timeDropdown:Add("Night")
 timeDropdown:Add("Midnight")
 
-local rebirthTab = window:AddTab("Rebirth")
-
--- Auto Rebirth
+-- Rebirth Tab
 local function autoRebirth()
     task.spawn(function()
         while true do
@@ -422,7 +424,7 @@ local function autoRebirth()
     end)
 end
 
-local autoRebirthToggle = rebirthTab:AddSwitch("Auto Rebirth (Infinite)", {
+local autoRebirthSwitch = rebirthTab:AddSwitch("Auto Rebirth (Infinite)", {
     Default = false,
     Callback = function(val)
         if val then
@@ -431,7 +433,6 @@ local autoRebirthToggle = rebirthTab:AddSwitch("Auto Rebirth (Infinite)", {
     end
 })
 
--- Auto Size 1
 local autoSizeSwitch = rebirthTab:AddSwitch("Auto Size 1", {
     Default = false,
     Callback = function(val)
